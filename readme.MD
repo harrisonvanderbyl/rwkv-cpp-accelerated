@@ -14,6 +14,7 @@ use ./build.sh to build for linux
 * No dependencies
 * Simple to use
 * Simple to build
+* Optional Python binding using pytorch tensors as wrappers
 
 ### TODO
 
@@ -21,4 +22,4 @@ use ./build.sh to build for linux
 * Add tokenizer
 * Optimize .pth converter (currently uses a lot of ram)
 * Better uint8 support ( currently only uses Q8_0 algorythm)
-
+* Fully fleshed out demos
