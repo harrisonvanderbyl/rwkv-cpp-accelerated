@@ -46,3 +46,26 @@ jobs:
       with:
         name: Release
         path: ./release
+
+  build:
+    runs-on: ubuntu-20.04
+
+    steps:
+    - uses: actions/checkout@v3
+
+    - uses: Jimver/cuda-toolkit@v0.2.10
+      id: cuda-toolkit
+      with:
+        cuda: '12.1.0'
+
+    # run bash file
+    - name: run bash file
+      run: |
+        ./build.sh
+
+    # package ./release into a zip and upload it as an artifact
+    - name: Upload Release
+      uses: actions/upload-artifact@v2
+      with:
+        name: Release
+        path: ./release
