@@ -19,6 +19,9 @@ add_executable(rwkv
     util.h
 )
 
+# add ./samplers to include path
+target_include_directories(rwkv PRIVATE ${CMAKE_CURRENT_SOURCE_DIR}/samplers)
+
 # link cuda lcudart_static
 target_link_libraries(rwkv PRIVATE CUDA::cudart_static)
 
