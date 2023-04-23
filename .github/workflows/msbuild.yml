@@ -36,9 +36,9 @@ jobs:
         cuda: '12.1.0'
     
     # run bash file
-    - name: run bash file
+    - name: run bat file
       run: |
-        ./build.sh
+        ./build.bat
 
     # package ./release into a zip and upload it as an artifact
     - name: Upload Release

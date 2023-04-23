@@ -1,10 +1,13 @@
 cmake_minimum_required(VERSION 3.17)
 
 # ensure CXX at least 11.3.0
+set(CMAKE_C_COMPILER "gcc")
+set(CMAKE_CXX_COMPILER "g++")
+
+set(CMAKE_CXX_STANDARD 17)
 
 project("rwkv.cuda" CXX CUDA)
 
-set(CMAKE_CXX_STANDARD 11)
 
 find_package(CUDAToolkit)
 
