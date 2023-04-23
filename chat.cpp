@@ -25,24 +25,25 @@ RWKV: It’s a large and very expensive piece of science equipment. If I underst
 \n\n\
 User";
     std::optional<GPT2Tokenizer> tokenizerop = GPT2Tokenizer::load("./vocab.json", "./merges.txt");
-    std::cout << "Hello world2" << std::endl;
     if (!tokenizerop.has_value()) {
         std::cerr << "Failed to load tokenizer" << std::endl;
         return 1;
     };
-    std::cout << "Hello world3" << std::endl;
     GPT2Tokenizer tokenizer = tokenizerop.value();
-std::cout << "Hello world4" << std::endl;
     std::vector<int64_t> initial = tokenizer.encode(chatRecord);
-std::cout << "Hello world5" << std::endl;
     RWKV Rwkv = RWKV();
-std::cout << "Hello world6" << std::endl;
+
     // tokenizer;
     // get current directory
     std::string current = std::filesystem::current_path();
 
     std::cout << current + "/model.bin" << std::endl;
-    Rwkv.loadFile("/home/harrison/Desktop/rwkvstic/src/rwkvstic/agnostic/backends/cuda/cudarwkv/rwkv-cpp-cuda/release/model.bin");
+    // if no file exists, suggest converting one
+    if (!std::filesystem::exists(current + "/model.bin")) {
+        std::cerr << "No model file found. Please convert a PyTorch model first.\n Use https://github.com/harrisonvanderbyl/rwkv-cpp-cuda exporter to create a model.bin file and move it next to here" << std::endl;
+        return 1;
+    }
+    Rwkv.loadFile(current + "/model.bin");
     std::cout << "Loaded model" << std::endl;
     int lasttoken = initial[initial.size()-1]; 
 
