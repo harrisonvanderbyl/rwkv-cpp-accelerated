@@ -6,7 +6,7 @@
 //#define getsize[x] getSize(x, n_layers, n_emb)
 
 
-void save(int64_t n_layers, int64_t n_emb, torch::Tensor &x, 
+void save(std::string outfile,int64_t n_layers, int64_t n_emb, torch::Tensor &x, 
     torch::Tensor &embed, torch::Tensor &layernorms, 
     torch::Tensor &statexy, torch::Tensor &stateaa, torch::Tensor &statebb, torch::Tensor &statepp, torch::Tensor &statedd,
     torch::Tensor &buffer1, torch::Tensor &buffer2, torch::Tensor &buffer3, torch::Tensor &buffer4,
@@ -73,7 +73,7 @@ void save(int64_t n_layers, int64_t n_emb, torch::Tensor &x,
         &heado
     };
     std::ofstream binfile;
-    binfile.open("rwkv.bin", std::ios::out | std::ios::binary);
+    binfile.open(outfile, std::ios::out | std::ios::binary);
     binfile.write((char*)&n_layers, sizeof(int64_t));
     binfile.write((char*)&n_emb, sizeof(int64_t));
     for(int i = 0; i < 46; i++) {

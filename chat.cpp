@@ -1,8 +1,9 @@
 #include "rwkv.h"
 #include "tokenizer/tokenizer.h"
 #include "samplers/typical.h"
-
+#include <filesystem>
 int main(){
+    std::cout << "Hello world1" << std::endl;
     
     std::string chatRecord = "The following is a conversation between a highly knowledgeable and intelligent AI assistant, called RWKV, and a human user, called User. In the following interactions, User and RWKV will converse in natural language, and RWKV will do its best to answer User’s questions. RWKV was built to be respectful, polite and inclusive. It knows a lot, and always tells the truth. The conversation begins.\
 \n\n\
@@ -24,18 +25,25 @@ RWKV: It’s a large and very expensive piece of science equipment. If I underst
 \n\n\
 User";
     std::optional<GPT2Tokenizer> tokenizerop = GPT2Tokenizer::load("./vocab.json", "./merges.txt");
+    std::cout << "Hello world2" << std::endl;
     if (!tokenizerop.has_value()) {
         std::cerr << "Failed to load tokenizer" << std::endl;
         return 1;
     };
+    std::cout << "Hello world3" << std::endl;
     GPT2Tokenizer tokenizer = tokenizerop.value();
-
+std::cout << "Hello world4" << std::endl;
     std::vector<int64_t> initial = tokenizer.encode(chatRecord);
-
+std::cout << "Hello world5" << std::endl;
     RWKV Rwkv = RWKV();
-
+std::cout << "Hello world6" << std::endl;
     // tokenizer;
-    Rwkv.loadFile("./export/rwkv.bin");
+    // get current directory
+    std::string current = std::filesystem::current_path();
+
+    std::cout << current + "/model.bin" << std::endl;
+    Rwkv.loadFile("/home/harrison/Desktop/rwkvstic/src/rwkvstic/agnostic/backends/cuda/cudarwkv/rwkv-cpp-cuda/release/model.bin");
+    std::cout << "Loaded model" << std::endl;
     int lasttoken = initial[initial.size()-1]; 
 
     for(int i = 0; i < initial.size(); i++)

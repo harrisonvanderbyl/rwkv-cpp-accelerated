@@ -1,13 +1,9 @@
+from tkinter import filedialog
+import tkinter
 import torch
 from tqdm import tqdm
 
-import os
-
-current_path = os.path.dirname(os.path.abspath(__file__))
-
-
 def OptRWKV(path):
-    
     from torch.utils.cpp_extension import load
     import os
     current_path = os.path.dirname(os.path.abspath(__file__))
@@ -116,8 +112,12 @@ def OptRWKV(path):
 
             
         def forward(self):
-            
+            # save as .bin file
+            # get currentpath ..
+            outfile = "../release/model.bin"
+
             torch.ops.rwkv.save(
+                outfile,
                 self.layers,
                 self.dim,
                 self.rx,
@@ -178,3 +178,14 @@ def OptRWKV(path):
     myrwkv = myRWKV(w,dims,layers)
     myrwkv.forward()
     exit()
+
+# ui library for choosing file
+def chooseFile():
+    # only .pth files
+    root = tkinter.Tk()
+    root.withdraw()
+    file_path = filedialog.askopenfilename(
+        filetypes=[("PyTorch Weights", "*.pth")])
+    return file_path
+
+OptRWKV(chooseFile())

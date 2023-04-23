@@ -2,9 +2,6 @@
 #include <assert.h>
 #include <stdint.h>
 #include <fstream>
-
-#include "util.h"
-
 #define MM8_ONE_JSPLIT 16
 #define MM8_ONE_TILE 1024
 #define EMBSPLIT 512
@@ -599,69 +596,81 @@ int64_t getSize(int64_t i, int64_t n_layers, int64_t n_embed);
 char* getName(int64_t i);
 // ptrs, n_layers, n_embed
 
-template<typename DType>
-DType *load_tensor(DType* input, int i, int n_layers, int n_embed)
-{
-    DType first = ((DType*)input)[0];
-    DType last = ((DType*)input)[getSize(i,n_layers,n_embed)-1];
-    printf(" %d: %f %f %d\n", int(i), float(first), float(last), int(getSize(i,n_layers,n_embed)));
-    DType* cuda_mem;
-    cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
-    cudaMemcpy(cuda_mem, input, getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
 
-    return cuda_mem;
-}
 
 std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
-    llama_file file(filename.c_str(), "rb");
-    llama_mmap map(&file);
+    std::ifstream binfile(filename, std::ios::in | std::ios::binary);
+    if (!binfile.is_open()) {
+        std::cout << "Error opening file " << filename << std::endl;
+        exit(1);
+    }
 
     // get n_layers
     // get n_embed
     int64_t n_layers, n_embed;
-    n_layers = *(int64_t*)map.addr;
-    n_embed = *(int64_t*)((char*)map.addr + sizeof(int64_t));
-
+    binfile.read((char*)&n_layers, sizeof(int64_t));
+    binfile.read((char*)&n_embed, sizeof(int64_t));
     // print
     std::cout << "n_layers: " << n_layers << std::endl;
     std::cout << "n_embed: " << n_embed << std::endl;
   
-    char* current = (char*)map.addr + sizeof(int64_t) * 2;
 
     for(int64_t i = 0; i < 46; i++) {
-        char* buffer;
         int64_t size = getSize(i, n_layers, n_embed);
         if(Mtypes(i) == sizeof(double)){
-            buffer = current;
-            current += size * sizeof(double);
+            ptrs[i] = (int*)(new double[size]);
         } else if(Mtypes(i) == sizeof(float)) {
-            buffer = current;
-            current += size * sizeof(float);
+            ptrs[i] = (int*)(new float[size]);
         } else if(Mtypes(i) == sizeof(uint8_t)) {
-            buffer = current;
-            current += size * sizeof(uint8_t);
+            ptrs[i] = (int*)(new uint8_t[size]);
         } else {
             std::cout << "Error: size not supported" << std::endl;
             exit(1);
         }
         std::cout << "loading: " << getName(i) << "\n";
+        binfile.read((char*)(ptrs[i]), size*Mtypes(i));
 
         if(Mtypes(i) == sizeof(float)){
-            printf("float ");
-            ptrs[i] = (int*)load_tensor((float*)buffer, i, n_layers, n_embed);
+            float first = ((float*)ptrs[i])[0];
+            float last = ((float*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
+            printf("float %d: %f %f %d\n", int(i), first, last, int(getSize(i,n_layers,n_embed)));
+            float* cuda_mem;
+            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
+            cudaMemcpy(cuda_mem, (float*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
+            // sync
+            cudaDeviceSynchronize();
+            free(ptrs[i]);
+            ptrs[i] = (int*)cuda_mem;
         }
         else if(Mtypes(i) == sizeof(double)){
-            printf("double ");
-            ptrs[i] = (int*)load_tensor((double*)buffer, i, n_layers, n_embed);
+            double firstd = ((double*)ptrs[i])[0];
+            double lastd = ((double*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
+            printf("double %d: %f %f %d\n",  int(i), firstd, lastd, int(getSize(i,n_layers,n_embed)));
+            double* cuda_mem;
+            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
+            cudaMemcpy(cuda_mem, (double*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
+            // sync
+            cudaDeviceSynchronize();
+            free(ptrs[i]);
+            ptrs[i] = (int*)cuda_mem;
         }
         else if(Mtypes(i) == sizeof(uint8_t)){
-            printf("uint8_t ");
-            ptrs[i] = (int*)load_tensor((uint8_t*)buffer, i, n_layers, n_embed);
+            uint8_t firstu = ((uint8_t*)ptrs[i])[0];
+            uint8_t lastu = ((uint8_t*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
+            printf("uint8_t %d: %d %d %d\n",  int(i), int(firstu), int(lastu), int(getSize(i,n_layers,n_embed)));
+            uint8_t* cuda_mem;
+            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
+            cudaMemcpy(cuda_mem, (uint8_t*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
+            // sync
+            cudaDeviceSynchronize();
+            free(ptrs[i]);
+            ptrs[i] = (int*)cuda_mem;
         }
     }
+    
+    binfile.close();
 
-    // sync
-    cudaDeviceSynchronize();
+    //   // return an array of pointers
 
     // return (n_layers, n_embed)
     return std::make_tuple(n_layers, n_embed);
