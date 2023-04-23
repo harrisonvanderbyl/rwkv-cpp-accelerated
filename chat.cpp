@@ -5,25 +5,28 @@
 int main(){
     std::cout << "Hello world1" << std::endl;
     
-    std::string chatRecord = "The following is a conversation between a highly knowledgeable and intelligent AI assistant, called RWKV, and a human user, called User. In the following interactions, User and RWKV will converse in natural language, and RWKV will do its best to answer User’s questions. RWKV was built to be respectful, polite and inclusive. It knows a lot, and always tells the truth. The conversation begins.\
-\n\n\
-User: OK RWKV, I’m going to start by quizzing you with a few warm-up questions. Who is currently the president of the USA?\
-\n\n\
-RWKV: It’s Joe Biden; he was sworn in earlier this year.\
-\n\n\
-User: What year was the French Revolution?\
-\n\n\
-RWKV: It started in 1789, but it lasted 10 years until 1799.\
-\n\n\
-User: Can you guess who I might want to marry?\
-\n\n\
-RWKV: Only if you tell me more about yourself - what are your interests?\
-\n\n\
-User: Aha, I’m going to refrain from that for now. Now for a science question. What can you tell me about the Large Hadron Collider (LHC)?\
-\n\n\
-RWKV: It’s a large and very expensive piece of science equipment. If I understand correctly, it’s a high-energy particle collider, built by CERN, and completed in 2008. They used it to confirm the existence of the Higgs boson in 2012.\
-\n\n\
-User";
+    std::string chatRecord = "The following is a coherent verbose detailed conversation between a girl named Alice and her friend Bob. \n\
+Alice is very intelligent, creative and friendly. \n\
+Alice is unlikely to disagree with Bob, and Alice doesn't like to ask Bob questions. \n\
+Alice likes to tell Bob a lot about herself and her opinions. \n\
+Alice usually gives Bob kind, helpful and informative advices.\n\
+\n\
+Bob: Hello Alice, how are you doing?\n\
+\n\
+Alice: Hi! Thanks, I'm fine. What about you?\n\
+\n\
+Bob: I am fine. It's nice to see you. Look, here is a store selling tea and juice.\n\
+\n\
+Alice: Sure. Let's go inside. I would like to have some Mocha latte, which is my favourite!\n\
+\n\
+Bob: What is it?\n\
+\n\
+Alice: Mocha latte is usually made with espresso, milk, chocolate, and frothed milk. Its flavors are frequently sweet.\n\
+\n\
+Bob: Sounds tasty. I'll try it next time. Would you like to chat with me for a while?\n\
+\n\
+Alice: Of course! I'm glad to answer your questions or give helpful advices. You know, I am confident with my expertise. So please go ahead!\n\n\
+";
     std::optional<GPT2Tokenizer> tokenizerop = GPT2Tokenizer::load("./vocab.json", "./merges.txt");
     if (!tokenizerop.has_value()) {
         std::cerr << "Failed to load tokenizer" << std::endl;
@@ -51,12 +54,26 @@ User";
     {
         Rwkv.forward(initial[i]);
     }
-
+    std::string output = "\n\n";
     while(true)
     {
+        if(output.substr(output.size()-2, 2) == "\n\n")
+        {
+            std::string input;
+            std::cout << "User:>";
+            std::getline(std::cin, input);
+            input = "Bob: " + input + "\n\nAlice:";
+            std::vector<int64_t> inputtokens = tokenizer.encode(input);
+            for(int i = 0; i < inputtokens.size(); i++)
+            {
+                Rwkv.forward(inputtokens[i]);
+            }
+        }
         Rwkv.forward(lasttoken);
         lasttoken = typical(Rwkv.out);
         std::cout << tokenizer.decode({(long int)lasttoken});
+        output += tokenizer.decode({(long int)lasttoken});
+        
 
     }
 
