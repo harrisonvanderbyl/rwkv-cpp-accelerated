@@ -5,7 +5,7 @@
 #include <iostream>
 #include <tuple>
 enum {X,EMBED,LAYERNORMS,STATEXY,STATEAA,STATEBB,STATEPP,STATEDD,BUFFER1,BUFFER2,BUFFER3,BUFFER4,MIXK,MIXV,MIXR,KM,VM,RM,KR,VR,RR,O1,O2,O3,ATTOUT,ATTOUTR,ATTOUTO,FFNMIXK,FFNMIXV,FFNK,FFNV,FFNR,FFNKR,FFNVR,FFNRR,FFNKO,FFNVO,FFNRO,FFNKBUFFER,FFNVBUFFER,FFNRBUFFER,DECAY,BONUS,HEAD,HEADR,HEADO};
-char* names[46] = {
+const char* const names[46] = {
     "xbuf",
     "embed",
     "layernorms",
@@ -107,7 +107,7 @@ unsigned long Mtypes(int64_t i) {
     return types[i];
 }
 
-char* getName(int64_t i) {
+const char* getName(int64_t i) {
     return names[i];
 }
 
