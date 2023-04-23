@@ -12,8 +12,8 @@ cmake ..
 cmake --build . --config release
 cd ..
 # windows
-mv ./build/release/rwkv.exe ./release/chat.exe
+mv ./build/rwkv.exe ./release/chat.exe
 # linux
-mv ./build/release/rwkv ./release/chat
+mv ./build/rwkv ./release/chat
 
 

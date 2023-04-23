@@ -34,7 +34,7 @@ jobs:
       - uses: Jimver/cuda-toolkit@v0.2.10
         id: cuda-toolkit
         with:
-          cuda: '12.1.0'
+          cuda: '11.7.0'
 
       # run bash file
       - name: run bash file
