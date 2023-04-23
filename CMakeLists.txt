@@ -12,3 +12,7 @@ add_executable(rwkv
     util.h
 )
 
+# link cuda lcudart_static
+target_link_libraries(rwkv PRIVATE CUDA::cudart_static)
+
+

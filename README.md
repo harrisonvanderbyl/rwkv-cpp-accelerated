@@ -29,9 +29,7 @@ Make sure you already installed CUDA Toolkit and Visual Studio 2022.
 Make sure you have python, torch installed
 ```
 > cd export
-> python
-  >>> from export import *
-  >>> OptRWKV("<Model_path>")
+> python3 export.py
 ```
 
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
