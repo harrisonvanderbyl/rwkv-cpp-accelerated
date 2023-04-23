@@ -114,7 +114,7 @@ def OptRWKV(path):
         def forward(self):
             # save as .bin file
             # get currentpath ..
-            outfile = "../release/model.bin"
+            outfile = current_path+"/../release/model.bin"
 
             torch.ops.rwkv.save(
                 outfile,
