@@ -7,5 +7,8 @@ find_package(CUDAToolkit)
 add_executable(rwkv
     chat.cpp
     rwkv.cu
+
+    rwkv.h
+    util.h
 )
 
