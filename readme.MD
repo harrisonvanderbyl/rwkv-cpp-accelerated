@@ -15,11 +15,12 @@ use ./build.sh to build for linux
 * Simple to use
 * Simple to build
 * Optional Python binding using pytorch tensors as wrappers
+* Native tokenizer!
 
 ### TODO
 
 * Add support for windows ( pretty sure all you need to do is change the path to the cuda lib in build.sh )
-* Add tokenizer
 * Optimize .pth converter (currently uses a lot of ram)
 * Better uint8 support ( currently only uses Q8_0 algorythm)
 * Fully fleshed out demos
+* better sampler
