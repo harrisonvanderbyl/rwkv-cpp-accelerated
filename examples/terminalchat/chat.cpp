@@ -32,10 +32,9 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
     GPT2Tokenizer tokenizer = tokenizerop.value();
     std::vector<int64_t> initial = tokenizer.encode(chatRecord);
     RWKV Rwkv = RWKV();
-
     // tokenizer;
     // get current directory
-    std::string current = std::filesystem::current_path();
+    std::string current = std::filesystem::current_path().string();
 
     std::cout << current + "/model.bin" << std::endl;
     // if no file exists, suggest converting one
@@ -45,14 +44,17 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
     }
     Rwkv.loadFile(current + "/model.bin");
     std::cout << "Loaded model" << std::endl;
+    std::cout << "Eval Prompts...";
     int lasttoken = initial[initial.size()-1]; 
 
     for(int i = 0; i < initial.size(); i++)
     {
         Rwkv.forward(initial[i]);
     }
+    std::cout << std::endl;
+
     std::string output = "\n\n";
-    while(true)
+    do
     {
         if(output.substr(output.size()-2, 2) == "\n\n")
         {
@@ -72,7 +74,7 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
         output += tokenizer.decode({(long int)lasttoken});
         
 
-    }
+    }while(lasttoken != 0); // stop on EOS
 
 
 }

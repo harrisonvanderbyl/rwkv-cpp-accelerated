@@ -19,12 +19,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/.. ${RWKV_INCLUDE_DIR})
 
 # add cuda file to project executables from include/rwkv/cuda/rwkv.cu
 
-project("rwkv.cuda" CXX CUDA)
-
-
-find_package(CUDAToolkit)
-
 add_executable(rwkv
+    ../../include/rwkv/tokenizer/tokenizer.cpp
     chat.cpp
     ../../include/rwkv/cuda/rwkv.cu
 )
