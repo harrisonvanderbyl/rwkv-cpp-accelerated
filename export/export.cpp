@@ -3,7 +3,7 @@
 #include <iostream>
 // generic T either float or fp16 or fp64
 #include "../rwkv.h"
-#define getsize[x] getSize(x, n_layers, n_emb)
+//#define getsize[x] getSize(x, n_layers, n_emb)
 
 
 void save(int64_t n_layers, int64_t n_emb, torch::Tensor &x, 

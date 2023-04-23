@@ -4,7 +4,7 @@ int main(){
 
     RWKV Rwkv = RWKV();
 
-    Rwkv.loadFile("/home/harrison/Desktop/rwkv_chatbot/rwkv.bin");
+    Rwkv.loadFile("./export/rwkv.bin");
     int lasttoken = 127;
     while(true)
     {

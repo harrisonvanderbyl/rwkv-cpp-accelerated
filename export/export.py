@@ -12,7 +12,7 @@ def OptRWKV(path):
     import os
     current_path = os.path.dirname(os.path.abspath(__file__))
     load(
-        name=f"wkv_cuda",
+        name=f"wkv_cuda_export",
         sources=[f"{current_path}/export.cpp"
                 ],
         )
