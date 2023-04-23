@@ -71,12 +71,12 @@ void setState(int64_t n_embed, int64_t n_layers,
 void getOutput(int64_t n_embed, int64_t n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
         float* logitsout, double* statexyout, double* stateaaout, double* statebbout, double* stateppout, double* stateddout);
 
-unsigned long f = sizeof(float);
-unsigned long d = sizeof(double);
-unsigned long g = sizeof(uint8_t);
+const unsigned long f = sizeof(float);
+const unsigned long d = sizeof(double);
+const unsigned long g = sizeof(uint8_t);
 
 // the byte sizes of the tensors
-unsigned long types[46] = {d,f,d,d,d,d,d,d,d,f,f,f,d,d,d,g,g,g,f,f,f,f,f,f,g,f,f,d,d,g,g,g,f,f,f,f,f,f,d,d,f,d,d,g,f,f};
+const unsigned long types[46] = {d,f,d,d,d,d,d,d,d,f,f,f,d,d,d,g,g,g,f,f,f,f,f,f,g,f,f,d,d,g,g,g,f,f,f,f,f,f,d,d,f,d,d,g,f,f};
 
 // forward pass
 void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double* x, 

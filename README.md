@@ -4,9 +4,39 @@ This is a super simple c++/cuda implementation of rwkv with no pytorch/libtorch 
 
 included is a simple example of how to use in both c++ and python.
 
-use ./build.sh to build for linux
+## Build Instructions
 
-### Features
+### Build on Linux
+```
+$./build.sh
+```
+
+### Build on Windows
+
+```
+> mkdir build
+> cd build
+> cmake ..
+> cmake --build . --config release
+```
+
+You can find executable at build/release/rwkv.exe
+
+Make sure you already installed CUDA Toolkit and Visual Studio 2022.
+
+## Convert the model into the format
+
+Make sure you have python, torch installed
+```
+> cd export
+> python
+  >>> from export import *
+  >>> OptRWKV("<Model_path>")
+```
+
+* On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
+
+## Features
 
 * Direct Disk -> Gpu loading ( practically no ram needed )
 * Uint8 by default
