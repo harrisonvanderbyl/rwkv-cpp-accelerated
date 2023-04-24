@@ -39,13 +39,10 @@ jobs:
       with:
         cuda: '11.7.0'
 
-    - name: cd into examples/terminalchat
-      run: |
-        cd examples/terminalchat
-    
     # run bash file
     - name: run bat file
       run: |
+        cd examples/terminalchat &&
         ./build.bat
 
     # package ./release into a zip and upload it as an artifact
