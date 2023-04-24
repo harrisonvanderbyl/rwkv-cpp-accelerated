@@ -1,5 +1,6 @@
 #include <torch/extension.h>
 #include "ATen/ATen.h"
+#include "rwkv.h"
 #include <iostream>
 // generic T either float or fp16 or fp64
 

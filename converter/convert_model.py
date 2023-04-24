@@ -7,7 +7,7 @@ import torch
 from torch.utils.cpp_extension import load as torch_load_cpp
 from tkinter import filedialog
 from tqdm import tqdm
-
+current_path = os.path.dirname(os.path.abspath(__file__))
 class ConvertRWKV(torch.nn.Module):
 
     def __init__(self, w, dims, layers):
@@ -92,7 +92,7 @@ class ConvertRWKV(torch.nn.Module):
         self.ffnkbuf = torch.arange(self.dim, dtype=torch.double)
         self.ffkeybuffer = torch.arange(self.dim*4, dtype=torch.float)       
 
-     def quantize_matrix(self, xx):
+    def quantize_matrix(self, xx):
         x = xx
         rang = 255
         mini = x.min(0)[0].double()
@@ -167,11 +167,13 @@ class ConvertRWKV(torch.nn.Module):
 
 
 def convert_model(path: str):
-    current_path = os.path.dirname(os.path.abspath(__file__))
+    
 
     torch_load_cpp(
         name="wkv_cuda_export",
         sources=["cpp_save_tensor.cpp"],
+        # add ../include to include path
+        extra_include_paths=[os.path.join(current_path, "../include/rwkv/rwkv")],
         )
 
     w = torch.load(path, map_location="cpu")
@@ -194,4 +196,4 @@ def chooseFile():
     return file_path
 
 if __name__ == "__main__":
-    OptRWKV(chooseFile())
+    convert_model(chooseFile())
