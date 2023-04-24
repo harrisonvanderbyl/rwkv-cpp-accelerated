@@ -13,5 +13,5 @@ cmake --build . --config release
 cd ..
 # linux
 mv ./build/rwkv ./release/chat
-
-
+# copy directory ../../include/rwkv/tokenizer/vocab to ./release
+cp -r ../../include/rwkv/tokenizer/vocab ./release

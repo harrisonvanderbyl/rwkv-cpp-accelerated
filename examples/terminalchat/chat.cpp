@@ -1,7 +1,6 @@
 #include "rwkv.h"
-#include "tokenizer/tokenizer.h"
-#include "samplers/typical.h"
 #include <filesystem>
+
 int main(){
     std::string chatRecord = "The following is a coherent verbose detailed conversation between a girl named Alice and her friend Bob. \n\
 Alice is very intelligent, creative and friendly. \n\
@@ -25,7 +24,7 @@ Bob: Sounds tasty. I'll try it next time. Would you like to chat with me for a w
 \n\
 Alice: Of course! I'm glad to answer your questions or give helpful advices. You know, I am confident with my expertise. So please go ahead!\n\n\
 ";
-    std::optional<GPT2Tokenizer> tokenizerop = GPT2Tokenizer::load("./vocab.json", "./merges.txt");
+    std::optional<GPT2Tokenizer> tokenizerop = GPT2Tokenizer::load("./vocab/vocab.json", "./vocab/merges.txt");
     if (!tokenizerop.has_value()) {
         std::cerr << "Failed to load tokenizer" << std::endl;
         return 1;
