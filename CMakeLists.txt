@@ -8,6 +8,8 @@ set(CMAKE_CXX_STANDARD 17)
 
 project("rwkv.cuda" CXX CUDA)
 
+# set enviroment variable to not use boost 
+set(NUMCPP_NO_USE_BOOST 1)
 
 find_package(CUDAToolkit)
 
