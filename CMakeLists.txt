@@ -1,8 +1,12 @@
 cmake_minimum_required(VERSION 3.17)
 
 # ensure CXX at least 11.3.0
-set(CMAKE_C_COMPILER "gcc")
-set(CMAKE_CXX_COMPILER "g++")
+
+if(WIN32)
+else()
+    set(CMAKE_CXX_COMPILER "g++")
+    set(CMAKE_C_COMPILER "gcc")
+endif()
 
 set(CMAKE_CXX_STANDARD 17)
 
