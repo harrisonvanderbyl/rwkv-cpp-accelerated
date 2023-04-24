@@ -8,6 +8,25 @@
 #define EMBBLOCK 16
 
 
+#if _MSC_VER >= 1910
+namespace std{
+template <class Arg, class Result>
+struct unary_function
+{
+    typedef Arg argument_type;
+    typedef Result result_type;
+};
+
+template <class Arg1, class Arg2, class Result>
+struct binary_function
+{
+    typedef Arg1 first_argument_type;
+    typedef Arg2 second_argument_type;
+    typedef Result result_type;
+};
+};
+#endif
+
 __global__ void cuda_layernorm(int64_t n_emb, const double *__restrict__ const x, const double *__restrict__ const weight, int64_t offset, float const inmean, float const instd, double *__restrict__ const out)
     {
     double xmean = inmean;
