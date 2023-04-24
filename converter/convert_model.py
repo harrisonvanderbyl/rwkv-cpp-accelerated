@@ -4,11 +4,12 @@ import tkinter
 
 import torch
 
-from torch.utils.cpp_extension import load
+from torch.utils.cpp_extension import load as torch_load_cpp
 from tkinter import filedialog
 from tqdm import tqdm
 
 class ConvertRWKV(torch.nn.Module):
+
     def __init__(self, w, dims, layers):
         super().__init__()
         
@@ -108,6 +109,8 @@ class ConvertRWKV(torch.nn.Module):
     def save_converted(self):
         # save as .bin file
         # get currentpath ..
+        assert hasattr(torch.ops, "rwkv"), "Save tensor cpp code is not loaded!"
+
         outfile = "{0}/model.bin".format(current_path)
 
         torch.ops.rwkv.save(
@@ -166,7 +169,7 @@ class ConvertRWKV(torch.nn.Module):
 def convert_model(path: str):
     current_path = os.path.dirname(os.path.abspath(__file__))
 
-    load_inline(
+    torch_load_cpp(
         name="wkv_cuda_export",
         sources=["cpp_save_tensor.cpp"],
         )
@@ -178,8 +181,8 @@ def convert_model(path: str):
     layers = len(
         list(filter(lambda x: "blocks" in x and "ln1.bias" in x, w.keys())))
 
-    myrwkv = ConvertRWKV(w, dims, layers)
-    myrwkv.save_converted()
+    convert_model_instance = ConvertRWKV(w, dims, layers)
+    convert_model_instance.save_converted()
 
 # ui library for choosing file
 def chooseFile():
