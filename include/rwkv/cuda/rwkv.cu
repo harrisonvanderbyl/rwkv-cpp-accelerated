@@ -10,55 +10,6 @@
 #define EMBSPLIT 512
 #define EMBBLOCK 16
 
-const char* const names[46] = {
-    "xbuf",
-    "embed",
-    "layernorms",
-    "state_xy",
-    "state_aa",
-    "state_bb",
-    "state_pp",
-    "state_dd",
-    "buffer1",
-    "buffer2",
-    "buffer3",
-    "buffer4",
-    "mix_k",
-    "mix_v",
-    "mix_r",
-    "km",
-    "vm",
-    "rm",
-    "kr",
-    "vr",
-    "rr",
-    "o1",
-    "o2",
-    "o3",
-    "att_out",
-    "att_out_r",
-    "att_out_o",
-    "ffn_mix_k",
-    "ffn_mix_v",
-    "ffn_k",
-    "ffn_v",
-    "ffn_r",
-    "ffn_kr",
-    "ffn_vr",
-    "ffn_rr",
-    "ffn_ko",
-    "ffn_vo",
-    "ffn_ro",
-    "ffn_k_buffer",
-    "ffn_v_buffer",
-    "ffn_r_buffer",
-    "decay",
-    "bonus",
-    "head",
-    "head_r",
-    "head_o"
-};
-
 #if _MSC_VER >= 1910
 namespace std{
 template <class Arg, class Result>
@@ -662,7 +613,7 @@ void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double *x,
 // this lazy loads the model from disk
 
 
-std::tuple<int,int> load (const std::string& filename, int** ptrs) {
+std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
     std::ifstream binfile(filename, std::ios::in | std::ios::binary);
     if (!binfile.is_open()) {
         std::cout << "Error opening file " << filename << std::endl;
@@ -737,6 +688,6 @@ std::tuple<int,int> load (const std::string& filename, int** ptrs) {
     //   // return an array of pointers
 
     // return (n_layers, n_embed)
-    return std::make_tuple((int)n_layers, (int)n_embed);
+    return std::make_tuple(n_layers, n_embed);
 
 }
