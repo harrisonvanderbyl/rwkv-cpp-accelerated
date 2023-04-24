@@ -3,8 +3,6 @@
 #include "samplers/typical.h"
 #include <filesystem>
 int main(){
-    std::cout << "Hello world1" << std::endl;
-    
     std::string chatRecord = "The following is a coherent verbose detailed conversation between a girl named Alice and her friend Bob. \n\
 Alice is very intelligent, creative and friendly. \n\
 Alice is unlikely to disagree with Bob, and Alice doesn't like to ask Bob questions. \n\
