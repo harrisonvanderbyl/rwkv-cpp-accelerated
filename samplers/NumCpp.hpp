@@ -40,7 +40,7 @@
 /// 1.68, 1.70, 1.72, and 1.73
 ///
 #pragma once
-
+#define NUMCPP_NO_USE_BOOST
 #include "NumCpp/Coordinates.hpp"
 #include "NumCpp/Core.hpp"
 #include "NumCpp/DateTime.hpp"
