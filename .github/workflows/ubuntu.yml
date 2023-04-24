@@ -43,11 +43,11 @@ jobs:
       # run bash file
       - name: run bash file
         run: |
-          ./build.sh
+          ./examples/terminalchat/build.sh
 
       # package ./release into a zip and upload it as an artifact
       - name: Upload Release
         uses: actions/upload-artifact@v2
         with:
           name: Release
-          path: ./release
+          path: ./examples/terminalchat/release

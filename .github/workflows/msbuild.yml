@@ -42,11 +42,11 @@ jobs:
     # run bash file
     - name: run bat file
       run: |
-        ./build.bat
+        ./examples/terminalchat/build.bat
 
     # package ./release into a zip and upload it as an artifact
     - name: Upload Release
       uses: actions/upload-artifact@v2
       with:
         name: Release
-        path: ./release
+        path: ./examples/terminalchat/release
