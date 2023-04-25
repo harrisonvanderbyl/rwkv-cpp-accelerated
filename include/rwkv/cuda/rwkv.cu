@@ -7,6 +7,7 @@
 #define EMBSPLIT 512
 #define EMBBLOCK 16
 
+#include "util.h"
 
 #if _MSC_VER >= 1910
 namespace std{
