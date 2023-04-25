@@ -512,7 +512,10 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
                double *decay, double *bonus,
                uint8_t *head, float *headr, float *heado)
 {
-    setxf<<<(n_emb+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(n_emb, embed, buffer1, token);
+    // copy the embedding table to the gpu buffer3, using token as the index
+    cudaMemcpy(buffer3, embed + token * n_emb, n_emb * sizeof(float), cudaMemcpyHostToDevice);
+    // copy buffer3 to buffer1
+    setx<<<(n_emb+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(n_emb, buffer3, buffer1);
     
     thrust::device_ptr<double> mp(buffer1);
     float ccmean = thrust::reduce(
@@ -633,6 +636,8 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
     // print
     std::cout << "n_layers: " << n_layers << std::endl;
     std::cout << "n_embed: " << n_embed << std::endl;
+
+    
   
 
     for(unsigned long long i = 0; i < 46; i++) {
@@ -649,6 +654,9 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
         }
         std::cout << "loading: " << getName(i) << "\n";
         binfile.read((char*)(ptrs[i]), size*Mtypes(i));
+
+        if( i == 1) // embedding table, stays on cpu
+            continue;
 
         if(Mtypes(i) == sizeof(float)){
             float first = ((float*)ptrs[i])[0];
