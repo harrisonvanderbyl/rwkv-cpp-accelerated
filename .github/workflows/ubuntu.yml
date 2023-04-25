@@ -8,6 +8,10 @@ name: UbuntuBuild
 on:
   push:
     branches: [ "main" ]
+    # only when .cpp .h or .cu files changed
+    paths:
+      - examples/**
+      - include/**
   pull_request:
     branches: [ "main" ]
 

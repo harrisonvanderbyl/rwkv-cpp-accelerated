@@ -4,6 +4,34 @@ This is a super simple c++/cuda implementation of rwkv with no pytorch/libtorch 
 
 included is a simple example of how to use in both c++ and python.
 
+### Features
+
+* Direct Disk -> Gpu loading ( practically no ram needed )
+* Uint8 by default
+* Incredibly fast
+* No dependencies
+* Simple to use
+* Simple to build
+* Optional Python binding using pytorch tensors as wrappers
+* Native tokenizer!
+* Windows Support!
+* Distributable programs! (check actions for the prebuilt example apps)
+
+### Roadmap
+
+* Optimize .pth converter (currently uses a lot of ram)
+* Better uint8 support ( currently only uses Q8_0 algorythm)
+* Fully fleshed out demos
+* Godot module
+
+## Run example app
+1) go to the actions tab
+2) find a green checkmark for your platform
+3) download the executable
+4) download or convert a model (download links pending)
+5) place the model.bin file in the same place as the executable
+6) run the executable
+
 ## Build Instructions
 
 ### Build on Linux
@@ -34,24 +62,6 @@ Make sure you have python, torch installed
 
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
 
-## Features
-
-* Direct Disk -> Gpu loading ( practically no ram needed )
-* Uint8 by default
-* Incredibly fast
-* No dependencies
-* Simple to use
-* Simple to build
-* Optional Python binding using pytorch tensors as wrappers
-* Native tokenizer!
-
-### TODO
-
-* Add support for windows ( pretty sure all you need to do is change the path to the cuda lib in build.sh )
-* Optimize .pth converter (currently uses a lot of ram)
-* Better uint8 support ( currently only uses Q8_0 algorythm)
-* Fully fleshed out demos
-* better sampler
 
 
 C++ tokenizer came from this project:
