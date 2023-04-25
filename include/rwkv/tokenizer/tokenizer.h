@@ -5,10 +5,14 @@
 #include <string>
 #include <unordered_map>
 #include <fstream>
+#include <optional>
 
-struct PairHash {
-	std::size_t operator()(const std::pair<std::string, std::string> &p) const noexcept;
+
+
+struct TokPairHash {
+	std::size_t operator()(const std::pair<std::string, std::string> &p) const noexcept ;
 };
+
 
 template <class T>
 inline void hash_combine(std::size_t &seed, const T &v) {
@@ -28,7 +32,7 @@ std::unordered_map<std::string, char> unicode_to_bytes() {
 	return code_map;
 }
 
-std::size_t PairHash::operator()(const std::pair<std::string, std::string> &p) const noexcept {
+std::size_t TokPairHash::operator()(const std::pair<std::string, std::string> &p) const noexcept {
 	std::size_t seed = 0;
 	hash_combine(seed, p.first);
 	hash_combine(seed, p.second);
@@ -37,16 +41,14 @@ std::size_t PairHash::operator()(const std::pair<std::string, std::string> &p) c
 
 class GPT2Tokenizer {
 	using BPE = std::pair<std::string, std::string>;
-	using BPERanks = std::unordered_map<BPE, size_t, PairHash>;
+	using BPERanks = std::unordered_map<BPE, size_t, TokPairHash>;
 	using Encoder = std::unordered_map<std::string, int64_t>;
 	using Decoder = std::unordered_map<int64_t, std::string>;
 
 public:
-#ifdef _WIN32
+
 	const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s[:alpha:][:digit:]]+|\\s+(?!\\S)|\\s+");
-#else
-	const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s[:alpha:][:digit:]]+|\\s+(?!\\S)|\\s+");
-#endif
+
 
 	static std::optional<GPT2Tokenizer> load(std::string_view vocab_file, std::string_view merges_file) {
 		// load merges file
