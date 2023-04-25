@@ -21,12 +21,12 @@ class RwkvCppWrapper:
         ]
         
 
-    def forward(self, x, state: List[torch.Tensor]):
+    def forward(self, token: int, state: List[torch.Tensor]):
         for i,o in enumerate(state):
             # copy values in without changing the pointer
             self.state[i].copy_(o)
         
-        torch.ops.rwkv.rwkvc(x[-1].item())
+        torch.ops.rwkv.rwkvc(token)
         torch.cuda.synchronize()
         
         return self.output, [o.clone() for o in self.state]
@@ -42,11 +42,11 @@ def load_cpp_bindings(
     load_cpp_extension(
         name=extension_name,
         sources=[torch_binding_cpp_path, rwkv_cuda_path,],
-        include=[headers_include_path]
+        extra_include_paths=[headers_include_path]
         )
 
 
 def load_cpp_rwkv(*, path: str) -> RwkvCppWrapper:
     layers, embed = torch.ops.rwkv.load(path)
 
-    return RwkvCPPWrapper()
+    return RwkvCppWrapper()
