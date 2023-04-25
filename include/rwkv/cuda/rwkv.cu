@@ -27,21 +27,21 @@ struct binary_function
 };
 #endif
 
-__global__ void cuda_layernorm(int64_t n_emb, const double *__restrict__ const x, const double *__restrict__ const weight, int64_t offset, float const inmean, float const instd, double *__restrict__ const out)
+__global__ void cuda_layernorm(unsigned long long n_emb, const double *__restrict__ const x, const double *__restrict__ const weight, unsigned long long offset, float const inmean, float const instd, double *__restrict__ const out)
     {
     double xmean = inmean;
     double x2 = sqrt(instd);
 
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
         if(i < n_emb){
             out[i] = weight[n_emb * offset + i] * ((x[i] - xmean) / x2) + weight[n_emb * (offset + 1) + i];
     }}
 }
 __global__ void kernel_mm8_threec(
-    const int64_t N,
+    const unsigned long long N,
     const float *__restrict__ const xy,
     
     const uint8_t *__restrict__ const w,
@@ -56,19 +56,19 @@ __global__ void kernel_mm8_threec(
     float *__restrict__ const y,
     float *__restrict__ const y1,
     float *__restrict__ const y2,
-    int64_t offset)
+    unsigned long long offset)
 {
 
-    const int k = blockIdx.y * blockDim.y + threadIdx.y;
-    const int j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
-    const int j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long k = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned long long j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
 
     if (k < N)
     {
         float y_local = 0;
         float y1_local = 0;
         float y2_local = 0;
-        for (int j = j0; j < j1; ++j)
+        for (long long j = j0; j < j1; ++j)
         {
             y_local += xy[j] * ((w[j * N + k + offset * N * N] * r[j + offset * N]) + o1[j + offset * N]);
             y1_local += xy[j+N] * ((w1[j * N + k + offset * N * N] * r1[j + offset * N]) + o2[j + offset * N]);
@@ -82,7 +82,7 @@ __global__ void kernel_mm8_threec(
 
 // generic T either float or fp16 or fp64
 
-void cuda_mm8_threec(int64_t N,
+void cuda_mm8_threec(unsigned long long N,
                      float *xy,
                      uint8_t *w,
                      uint8_t *w1,
@@ -96,7 +96,7 @@ void cuda_mm8_threec(int64_t N,
                      float *y,
                      float *y1,
                      float *y2,
-                     int64_t offset = 0
+                     unsigned long long offset = 0
 
 )
 {
@@ -121,83 +121,83 @@ void cuda_mm8_threec(int64_t N,
 }
 
 __global__ void setx(
-    const int emb,
+    const unsigned long long emb,
     const float *__restrict__ const a,
     double *__restrict__ const b,
-    int64_t offset = 0)
+    unsigned long long offset = 0)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i + offset * emb] = double(a[i]);
     }}
 }
 __global__ void setx(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const a,
     double *__restrict__ const b,
-    int64_t offset = 0)
+    unsigned long long offset = 0)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i + offset * emb] = double(a[i]);
     }}
 }
 __global__ void setx(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const a,
     float *__restrict__ const b,
-    int64_t offset = 0)
+    unsigned long long offset = 0)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i + offset * emb] = float(a[i]);
     }}
 }
 __global__ void setx(
-    const int emb,
+    const unsigned long long emb,
     float *__restrict__ const a,
     float *__restrict__ const b,
-    int64_t offset = 0)
+    unsigned long long offset = 0)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i + offset * emb] = float(a[i]);
     }}
 }
 __global__ void setxf(
-    const int emb,
+    const unsigned long long emb,
     float *__restrict__ const a,
     double *__restrict__ const b,
-    int64_t offset = 0)
+    unsigned long long offset = 0)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i] = double(a[i+ offset * emb]);
     }}
 }
 __global__ void cuda_memset(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const a,
     double b)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         a[i] = b;
@@ -205,27 +205,27 @@ __global__ void cuda_memset(
 }
 
 __global__ void cuda_memset(
-    const int emb,
+    const unsigned long long emb,
     float *__restrict__ const a,
     float b)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         a[i] = b;
     }}
 }
 __global__ void cuda_relusquared(
-    const int emb,
+    const unsigned long long emb,
     float *__restrict__ const a,
     float *__restrict__ const b
 )
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         a[i] = a[i] * (a[i] > 0);
@@ -237,15 +237,15 @@ __global__ void cuda_relusquared(
 }
 
 __global__ void sigmoid(
-    const int emb,
+    const unsigned long long emb,
     float *__restrict__ const a,
     float *__restrict__ const out,
     float *__restrict__ const d
 )
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         out[i] = float(1.0 / (1.0 + exp(-double(a[i]))));
@@ -255,15 +255,15 @@ __global__ void sigmoid(
         d[i*4+3] = 0.0;
     }}
 }
-__global__ void kernel_wkvc_forward(const int C,
+__global__ void kernel_wkvc_forward(const unsigned long long C,
                                     const double *__restrict__ const w, const double *__restrict__ const u, const float *__restrict__ const k, const float *__restrict__ const v,
                                     const float *__restrict__ const r, double *__restrict__ const y, double *__restrict__ const _aa, double *__restrict__ const _bb, double *__restrict__ const _pp,
-                                    int64_t offset)
+                                    unsigned long long offset)
 {
 
-    int i = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int ii = i + threadIdx.x*EMBBLOCK + c;
+    long long i = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        long long ii = i + threadIdx.x*EMBBLOCK + c;
     
     if(ii < C){
         double aa = _aa[ii + C * offset];
@@ -275,37 +275,37 @@ __global__ void kernel_wkvc_forward(const int C,
         const double wr2 = bb + exp(u[ii + C * offset] + w[ii + C * offset] + k[ii]);
         y[ii] = (wr1) / wr2;
         y[ii] = (1.0 / (1.0 + exp(-r[ii]))) * y[ii];
-        aa = (aa + exp(k[ii]) * vv) * exp(w[ii + C * offset]);
-        bb = (bb + exp(k[ii])) * exp(w[ii + C * offset]);
+        aa = (aa + exp(double(k[ii])) * vv) * exp(w[ii + C * offset]);
+        bb = (bb + exp(double(k[ii]))) * exp(w[ii + C * offset]);
         _aa[ii + C * offset] = aa;
         _bb[ii + C * offset] = bb;
         _pp[ii + C * offset] = pp;
     }}
 }
 
-void cuda_wkvc_forward(int B, double *w, double *u, float *k, float *v, float *r, double *y, double *aa, double *bb, double *pp, int64_t offset)
+void cuda_wkvc_forward(unsigned long long B, double *w, double *u, float *k, float *v, float *r, double *y, double *aa, double *bb, double *pp, unsigned long long offset)
 {
 
     kernel_wkvc_forward<<<(B+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(B, w, u, k, v, r, y, aa, bb, pp, offset);
 }
 __global__ void kernelc_mm8_one(
-    const int N, const int M,
+    const unsigned long long N, const unsigned long long M,
     const double *__restrict__ const x,
-    const uint8_t *__restrict__ const w, const int w_stride,
+    const uint8_t *__restrict__ const w, const unsigned long long w_stride,
     float *__restrict__ const y,
     const float *__restrict__ const r,
     const float *__restrict__ const o,
-    const int64_t offset)
+    const unsigned long long offset)
 {
 
-    const int k = blockIdx.y * blockDim.y + threadIdx.y;
-    const int j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
-    const int j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long k = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned long long j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
 
     if (k < M)
     {
         float y_local = 0;
-        for (int j = j0; j < j1; ++j)
+        for (unsigned long long j = j0; j < j1; ++j)
         {
             y_local += float(x[j]) * ((w[j * w_stride + k + offset * N * M] * r[j + offset * N] + o[j + offset * N]));
         }
@@ -313,13 +313,13 @@ __global__ void kernelc_mm8_one(
     }
 }
 
-void cudac_mm8_one(int N, int M,
+void cudac_mm8_one(unsigned long long N, unsigned long long M,
                    double *x,
-                   uint8_t *w, int w_stride,
+                   uint8_t *w, unsigned long long w_stride,
                    float *y,
                    float *r,
                    float *o,
-                   uint64_t offset)
+                   unsigned long long offset)
 {
     dim3 blockSize(1, MM8_ONE_TILE);
     dim3 gridSize(MM8_ONE_JSPLIT, (M + blockSize.y - 1) / blockSize.y);
@@ -328,23 +328,23 @@ void cudac_mm8_one(int N, int M,
 }
 
 __global__ void kernelc_mm8_one(
-    const int N, const int M,
+    const unsigned long long N, const unsigned long long M,
     const float *__restrict__ const x,
-    const uint8_t *__restrict__ const w, const int w_stride,
+    const uint8_t *__restrict__ const w, const unsigned long long w_stride,
     float *__restrict__ const y,
     const float *__restrict__ const r,
     const float *__restrict__ const o,
-    const int64_t offset)
+    const unsigned long long offset)
 {
 
-    const int k = blockIdx.y * blockDim.y + threadIdx.y;
-    const int j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
-    const int j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long k = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned long long j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
 
     if (k < M)
     {
         float y_local = 0;
-        for (int j = j0; j < j1; ++j)
+        for (unsigned long long j = j0; j < j1; ++j)
         {
             y_local += float(x[j]) * ((w[j * w_stride + k + offset * N * M] * r[j + offset * N] + o[j + offset * N]));
         }
@@ -352,13 +352,13 @@ __global__ void kernelc_mm8_one(
     }
 }
 
-void cudac_mm8_one(int N, int M,
+void cudac_mm8_one(unsigned long long  N, unsigned long long M,
                    float *x,
-                   uint8_t *w, int w_stride,
+                   uint8_t *w, unsigned long long w_stride,
                    float *y,
                    float *r,
                    float *o,
-                   uint64_t offset)
+                   unsigned long long offset)
 {
     dim3 blockSize(1, MM8_ONE_TILE);
     dim3 gridSize(MM8_ONE_JSPLIT, (M + blockSize.y - 1) / blockSize.y);
@@ -366,13 +366,13 @@ void cudac_mm8_one(int N, int M,
         N, M, x, w, w_stride, y, r, o, offset);
 }
 __global__ void addx(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const a,
     double *__restrict__ const b)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         b[i] += double(a[i]);
@@ -380,19 +380,19 @@ __global__ void addx(
 }
 
 __global__ void mixffn(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const rc,
     double *__restrict__ const ddd,
     double *__restrict__ const mixk,
     double *__restrict__ const mixr,
     double *__restrict__ const outk,
-    double *__restrict__ const outr, int64_t offset
+    double *__restrict__ const outr, unsigned long long offset
 
 )
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         outk[i] = mixk[i + offset * emb] * rc[i] + (1.0 - mixk[i + offset * emb]) * ddd[i + offset * emb];
@@ -401,23 +401,23 @@ __global__ void mixffn(
 }
 
 __global__ void mixatt(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const rc,
     double *__restrict__ const ddd,
     double *__restrict__ const mixk,
     double *__restrict__ const mixv,
     double *__restrict__ const mixr,
     float *__restrict__ const outkvr,
-    int64_t offset,
+    unsigned long long offset,
     float* a,
     float* b,
     float* cc
 
 )
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         outkvr[i] = mixk[i + offset * emb] * rc[i] + (1.0 - mixk[i + offset * emb]) * ddd[i + offset * emb];
@@ -431,14 +431,14 @@ __global__ void mixatt(
 }
 
 __global__ void blockout(
-    const int emb,
+    const unsigned long long emb,
     double *__restrict__ const x,
     float *__restrict__ const rcm,
     float *__restrict__ const ddd)
 {
-    int ii = blockIdx.x*(blockDim.x*EMBBLOCK);
-    for(int c = 0; c < EMBBLOCK; c++){
-        int i = ii + threadIdx.x*EMBBLOCK + c;
+    unsigned long long ii = blockIdx.x*(blockDim.x*EMBBLOCK);
+    for(unsigned long long c = 0; c < EMBBLOCK; c++){
+        unsigned long long i = ii + threadIdx.x*EMBBLOCK + c;
     
     if(i < emb){
         x[i] = x[i] + rcm[i] * ddd[i];
@@ -471,7 +471,7 @@ struct varianceshifteop
     }
 };
 
-void getOutput(int64_t n_embed, int64_t n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
+void getOutput(unsigned long long n_embed, unsigned long long n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
                                                 float* logitsout, double* statexyout, double* stateaaout, double* statebbout, double* stateppout, double* stateddout){
     // copy gpu tensor in to cpu tensor out
     cudaMemcpy(logitsout, logitsin, 50277*sizeof(float), cudaMemcpyDeviceToHost);
@@ -483,7 +483,7 @@ void getOutput(int64_t n_embed, int64_t n_layers, float* logitsin, double* state
     
 };
 
-void setState(int64_t n_embed, int64_t n_layers,
+void setState(unsigned long long n_embed, unsigned long long n_layers,
     double* stateaa, double* statebb, double* statecc, double* statedd, double* stateee,
     double* instateaa, double* instatebb, double* instatecc, double* instatedd, double* instateee){
     
@@ -495,7 +495,7 @@ void setState(int64_t n_embed, int64_t n_layers,
     cudaMemcpy(stateee, instateee, n_embed*n_layers*sizeof(double), cudaMemcpyHostToDevice);
 };
 
-void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double *x,
+void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned long long token, double *x,
                float *embed, double *layernorms,
                double *statexy, double *stateaa, double *statebb, double *statepp, double *statedd,
                double *buffer1, float *buffer2, float *buffer3, float *buffer4,
@@ -530,7 +530,7 @@ void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double *x,
     cuda_layernorm<<<(n_emb+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(n_emb, buffer1, layernorms, 0,ccmean,ccvariance, x);
     thrust::device_ptr<double> xp(x);
 
-    for (int64_t i = 0; i < n_layers; i++)
+    for (unsigned long long i = 0; i < n_layers; i++)
     {
         // xy = ln(x)
         // kmix, vmix, rmix = mix(xy, statexy[n_emb*y], mixkvr)
@@ -606,18 +606,19 @@ void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double *x,
     cuda_layernorm<<<(n_emb+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(n_emb, x, layernorms, 4 * (n_layers) + 2,mean,variance, buffer1);
     cuda_memset<<<(50277+EMBSPLIT-1)/EMBSPLIT, EMBSPLIT/EMBBLOCK>>>(50277, buffer2, 0);
     cudac_mm8_one(n_emb, 50277, buffer1, head, 50277, buffer2, headr, heado, 0);
+    cudaDeviceSynchronize();
 }
 
 // this lazy loads the model from disk
 
-unsigned long Mtypes(int64_t i);
-int64_t getSize(int64_t i, int64_t n_layers, int64_t n_embed);
-char* getName(int64_t i);
+unsigned long long Mtypes(unsigned long long i);
+unsigned long long getSize(unsigned long long i, unsigned long long n_layers, unsigned long long n_embed);
+char* getName(unsigned long long i);
 // ptrs, n_layers, n_embed
 
 
 
-std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
+std::tuple<unsigned long long,unsigned long long> load (const std::string& filename, int** ptrs) {
     std::ifstream binfile(filename, std::ios::in | std::ios::binary);
     if (!binfile.is_open()) {
         std::cout << "Error opening file " << filename << std::endl;
@@ -626,16 +627,16 @@ std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
 
     // get n_layers
     // get n_embed
-    int64_t n_layers, n_embed;
-    binfile.read((char*)&n_layers, sizeof(int64_t));
-    binfile.read((char*)&n_embed, sizeof(int64_t));
+    unsigned long long n_layers, n_embed;
+    binfile.read((char*)&n_layers, sizeof(unsigned long long));
+    binfile.read((char*)&n_embed, sizeof(unsigned long long));
     // print
     std::cout << "n_layers: " << n_layers << std::endl;
     std::cout << "n_embed: " << n_embed << std::endl;
   
 
-    for(int64_t i = 0; i < 46; i++) {
-        int64_t size = getSize(i, n_layers, n_embed);
+    for(unsigned long long i = 0; i < 46; i++) {
+        unsigned long long size = getSize(i, n_layers, n_embed);
         if(Mtypes(i) == sizeof(double)){
             ptrs[i] = (int*)(new double[size]);
         } else if(Mtypes(i) == sizeof(float)) {
@@ -652,7 +653,7 @@ std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
         if(Mtypes(i) == sizeof(float)){
             float first = ((float*)ptrs[i])[0];
             float last = ((float*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("float %d: %f %f %d\n", int(i), first, last, int(getSize(i,n_layers,n_embed)));
+            printf("float %d: %f %f %d\n", (i), first, last, (getSize(i,n_layers,n_embed)));
             float* cuda_mem;
             cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
             cudaMemcpy(cuda_mem, (float*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
@@ -664,7 +665,7 @@ std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
         else if(Mtypes(i) == sizeof(double)){
             double firstd = ((double*)ptrs[i])[0];
             double lastd = ((double*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("double %d: %f %f %d\n",  int(i), firstd, lastd, int(getSize(i,n_layers,n_embed)));
+            printf("double %d: %f %f %d\n",  (i), firstd, lastd, (getSize(i,n_layers,n_embed)));
             double* cuda_mem;
             cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
             cudaMemcpy(cuda_mem, (double*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
@@ -676,7 +677,7 @@ std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs) {
         else if(Mtypes(i) == sizeof(uint8_t)){
             uint8_t firstu = ((uint8_t*)ptrs[i])[0];
             uint8_t lastu = ((uint8_t*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("uint8_t %d: %d %d %d\n",  int(i), int(firstu), int(lastu), int(getSize(i,n_layers,n_embed)));
+            printf("uint8_t %d: %d %d %lld\n",  (i), (firstu), (lastu), (getSize(i,n_layers,n_embed)));
             uint8_t* cuda_mem;
             cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
             cudaMemcpy(cuda_mem, (uint8_t*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);

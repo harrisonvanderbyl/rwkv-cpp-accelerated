@@ -87,7 +87,7 @@ void save(std::string outfile,int64_t n_layers, int64_t n_emb, torch::Tensor &x,
         else if (types[i] == sizeof(uint8_t)){
             assert(tensors[i]->scalar_type() == torch::kByte);
         }
-        binfile.write((char*)tensors[i]->data_ptr(), tensors[i]->numel() * types[i]);
+        binfile.write((char*)tensors[i]->data_ptr(), (unsigned long long)tensors[i]->numel() * (unsigned long long)types[i]);
         
     }
     

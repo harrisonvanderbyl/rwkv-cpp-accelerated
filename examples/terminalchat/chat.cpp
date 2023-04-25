@@ -46,10 +46,16 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
     Rwkv.loadFile(current + "/model.bin");
     std::cout << "Loaded model" << std::endl;
     int lasttoken = initial[initial.size()-1]; 
-
+    std::cout << "loading context" << std::endl << std::endl;
     for(int i = 0; i < initial.size(); i++)
     {
+        // load initial
         Rwkv.forward(initial[i]);
+        // delete last progress
+        std::cout << "\r";
+        std::cout << int(float(i)/initial.size()*100) << "%";
+        std::flush(std::cout);
+
     }
     std::string output = "\n\n";
     while(true)
@@ -67,8 +73,12 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
             }
         }
         Rwkv.forward(lasttoken);
+        Rwkv.out[0] = -99; // <|endoftext|> token is -99
         lasttoken = typical(Rwkv.out);
         std::cout << tokenizer.decode({(long int)lasttoken});
+        // refresh output
+        std::flush(std::cout);
+
         output += tokenizer.decode({(long int)lasttoken});
         
 

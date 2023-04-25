@@ -57,18 +57,18 @@ char* names[46] = {
 // cuda hooks 
 
 // load from file
-std::tuple<int64_t,int64_t> load (const std::string& filename, int** ptrs);
-void setState(int64_t n_embed, int64_t n_layers,
+std::tuple<unsigned long long,unsigned long long> load (const std::string& filename, int** ptrs);
+void setState(unsigned long long n_embed, unsigned long long n_layers,
     double* stateaa, double* statebb, double* statecc, double* statedd, double* stateee,
     double* instateaa, double* instatebb, double* instatecc, double* instatedd, double* instateee);
 
 // copy the state into the gpu
-void setState(int64_t n_embed, int64_t n_layers,
+void setState(unsigned long long n_embed, unsigned long long n_layers,
     double* stateaa, double* statebb, double* statecc, double* statedd, double* stateee,
     double* instateaa, double* instatebb, double* instatecc, double* instatedd, double* instateee);
 
 // copy the logits to the output
-void getOutput(int64_t n_embed, int64_t n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
+void getOutput(unsigned long long n_embed, unsigned long long n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
         float* logitsout, double* statexyout, double* stateaaout, double* statebbout, double* stateppout, double* stateddout);
 
 const unsigned long f = sizeof(float);
@@ -79,7 +79,7 @@ const unsigned long g = sizeof(uint8_t);
 const unsigned long types[46] = {d,f,d,d,d,d,d,d,d,f,f,f,d,d,d,g,g,g,f,f,f,f,f,f,g,f,f,d,d,g,g,g,f,f,f,f,f,f,d,d,f,d,d,g,f,f};
 
 // forward pass
-void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double* x, 
+void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned long long token, double* x, 
     float* embed, double* layernorms, 
     double* statexy, double* stateaa, double* statebb, double* statepp, double* statedd,
     double* buffer1, float* buffer2, float* buffer3, float* buffer4,
@@ -98,16 +98,16 @@ void cuda_rwkv(int64_t n_layers, int64_t n_emb, int64_t token, double* x,
     );
 
 
-int64_t getSize(int64_t i, int64_t a, int64_t b) {
-    int64_t sizes[46] = {b,50277*b,4*(a+1)*b, a*b,a*b,a*b,a*b,a*b, b, 50277,b,b,a*b,a*b,a*b,a*b*b,a*b*b,a*b*b,a*b,a*b,a*b,a*b,a*b,a*b,a*b*b,a*b,a*b,a*b,a*b,a*b*b*4,a*b*b*4,a*b*b,a*b,a*b*4,a*b,a*b,a*b*4,a*b,b,b,b*4,a*b,a*b,50277*b,b,b};
+unsigned long long getSize(unsigned long long i, unsigned long long a, unsigned long long b) {
+    unsigned long long sizes[46] = {b,50277*b,4*(a+1)*b, a*b,a*b,a*b,a*b,a*b, b, 50277,b,b,a*b,a*b,a*b,a*b*b,a*b*b,a*b*b,a*b,a*b,a*b,a*b,a*b,a*b,a*b*b,a*b,a*b,a*b,a*b,a*b*b*4,a*b*b*4,a*b*b,a*b,a*b*4,a*b,a*b,a*b*4,a*b,b,b,b*4,a*b,a*b,50277*b,b,b};
         return sizes[i];
     }
 
-unsigned long Mtypes(int64_t i) {
+unsigned long long Mtypes(unsigned long long i) {
     return types[i];
 }
 
-char* getName(int64_t i) {
+char* getName(unsigned long long i) {
     return names[i];
 }
 
@@ -117,10 +117,10 @@ class RWKV {
         int** tensors = new int*[46];
 
         // Number of layers in model
-        int num_layers = 0;
+        unsigned long long num_layers = 0;
 
         // Number of elements per embedding
-        int num_embed = 0;
+        unsigned long long num_embed = 0;
 
         // Cpu tensor for reading logits
         float* out = new float[50277];
@@ -144,31 +144,31 @@ class RWKV {
             statebb = new double[num_layers*num_embed];
             statepp = new double[num_layers*num_embed];
             statedd = new double[num_layers*num_embed];
-            for (int i = 0; i < num_layers*num_embed; i++) {
+            for (unsigned long long i = 0; i < num_layers*num_embed; i++) {
                 statexy[i] = 0;
                 stateaa[i] = 0;
                 statebb[i] = 0;
                 statepp[i] = 0;
                 statedd[i] = 0;
             }
-            for (int i = 0; i < 50277; i++) {
+            for (unsigned long long i = 0; i < 50277; i++) {
                 out[i] = 0;
             }
         };
 
         // Get number of elements in a tensor
-        int64_t getTensorSize(int64_t i) {
+        unsigned long long getTensorSize(unsigned long long i) {
             return getSize(i, num_layers, num_embed);
         };
 
         // Get the bytesize of a tensor
-        int64_t getTensorTypes(int64_t i) {
+        unsigned long long getTensorTypes(unsigned long long i) {
             return types[i];
         };
 
         
 
-        float* forward(int64_t token){
+        float* forward(unsigned long long token){
 
             // copy the state into the gpu
             setState(num_layers, num_embed, (double*)(tensors[STATEXY]), (double*)(tensors[STATEAA]), (double*)(tensors[STATEBB]), (double*)(tensors[STATEPP]), (double*)(tensors[STATEDD]), statexy, stateaa, statebb, statepp, statedd);

@@ -25,13 +25,13 @@ std::vector<torch::Tensor> attachState(torch::Tensor out){
     return {statexy, stateaa, statebb, statepp, statedd};
 }
 
-std::tuple<int64_t,int64_t> loadWrapper(const std::string& filename){
+std::tuple<unsigned long long,unsigned long long> loadWrapper(const std::string& filename){
     Rwkv.loadFile(filename);
 
     return std::make_tuple(Rwkv.num_layers, Rwkv.num_embed);
 }
 
-void cuda_rwkv_wrapper(int64_t token){
+void cuda_rwkv_wrapper(unsigned long long token){
     Rwkv.forward(token);
 }
 
