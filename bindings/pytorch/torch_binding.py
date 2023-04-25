@@ -8,8 +8,6 @@ from torch.utils.cpp_extension import load as load_cpp_extension
 from tqdm import tqdm
 
 
-current_path = os.path.dirname(os.path.abspath(__file__))
-
 class RwkvCppWrapper:
 
 
@@ -23,25 +21,32 @@ class RwkvCppWrapper:
         ]
         
 
-    def forward(self, x, state: List[torch.Tensor]):
+    def forward(self, token: int, state: List[torch.Tensor]):
         for i,o in enumerate(state):
             # copy values in without changing the pointer
             self.state[i].copy_(o)
         
-        torch.ops.rwkv.rwkvc(x[-1].item())
+        torch.ops.rwkv.rwkvc(token)
         torch.cuda.synchronize()
         
         return self.output, [o.clone() for o in self.state]
      
-def load_cpp_rwkv(path, **kwargs) -> RwkvCppWrapper:
+def load_cpp_bindings(
+        *,
+        torch_binding_cpp_path: str, 
+        rwkv_cuda_path: str,
+        headers_include_path: str,
+        extension_name="wkv_cuda",
+        ):
 
     load_cpp_extension(
-        name=f"wkv_cuda",
-        sources=[f"{current_path}/torchbind.cpp",
-                f"{current_path}/rwkv.cu",
-                ],
+        name=extension_name,
+        sources=[torch_binding_cpp_path, rwkv_cuda_path,],
+        extra_include_paths=[headers_include_path]
         )
 
+
+def load_cpp_rwkv(*, path: str) -> RwkvCppWrapper:
     layers, embed = torch.ops.rwkv.load(path)
-    
-    return RwkvCPPWrapper()
+
+    return RwkvCppWrapper()
