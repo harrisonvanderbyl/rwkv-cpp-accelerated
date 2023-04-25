@@ -50,7 +50,7 @@ public:
     #ifdef _WIN32
     const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s[:alpha:][:digit:]]+|\\s+(?!\\S)|\\s+");
     #else
-    const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+");
+    const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s[:alpha:][:digit:]]+|\\s+(?!\\S)|\\s+");
     #endif
 
 static std::optional<GPT2Tokenizer> load(std::string_view vocab_file, std::string_view merges_file) {
