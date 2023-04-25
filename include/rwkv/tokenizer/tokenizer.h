@@ -1,14 +1,13 @@
 #include <string>
-#include <fstream>
 #include <memory>
 #include <optional>
 #include <unordered_map>
-#include <numeric>
-
-#include "ctre-unicode.hpp"
+#include <regex>
 #include "simdjson.h"
 
-// the code here is based on the transformers python package -> transformers.models.gpt2.GPT2Tokenizer
+struct PairHash{
+    std::size_t operator()(const std::pair<std::string, std::string>& p) const noexcept;
+};
 
 template <class T>
 inline void hash_combine(std::size_t& seed, const T& v)
@@ -29,52 +28,32 @@ std::unordered_map<std::string, char> unicode_to_bytes() {
     return code_map;
 }
 
-class GPT2Tokenizer {
+std::size_t PairHash::operator()(const std::pair<std::string, std::string>& p) const noexcept
+{
+    std::size_t seed = 0;
+    hash_combine(seed, p.first);
+    hash_combine(seed, p.second);
+    return seed;
+}
 
-    struct PairHash
-    {
-        std::size_t operator()(const std::pair<std::string, std::string>& p) const noexcept
-        {
-            std::size_t seed = 0;
-            hash_combine(seed, p.first);
-            hash_combine(seed, p.second);
-            return seed;
-        }
-    };
+class GPT2Tokenizer {
 
     using BPE = std::pair<std::string, std::string>;
     using BPERanks = std::unordered_map<BPE, size_t, PairHash>;
     using Encoder = std::unordered_map<std::string, int64_t>;
     using Decoder = std::unordered_map<int64_t, std::string>;
 
-    // who knows what this does
-    static constexpr std::string_view pattern {"'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+"};
 
+   
 public:
 
-    static std::optional<GPT2Tokenizer> load(std::string_view vocab_file, std::string_view merges_file);
+    #ifdef _WIN32
+    const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?[[:alpha:]]+| ?[[:digit:]]+| ?[^\\s[:alpha:][:digit:]]+|\\s+(?!\\S)|\\s+");
+    #else
+    const std::regex pattern = std::regex("'s|'t|'re|'ve|'m|'ll|'d| ?\\p{L}+| ?\\p{N}+| ?[^\\s\\p{L}\\p{N}]+|\\s+(?!\\S)|\\s+");
+    #endif
 
-    std::vector<int64_t> encode(const std::string&);
-    std::string decode(const std::vector<int64_t>&);
-    std::vector<std::string> tokenize(const std::string&);
-
-    size_t vocab_size() const noexcept { return m_encoder.size(); }
-    
-protected:
-
-    GPT2Tokenizer() = default;
-
-    BPERanks m_bpe_ranks;
-    Encoder m_encoder;
-    Decoder m_decoder;
-    std::unordered_map<char, std::string> m_byte_encoder;
-    std::unordered_map<std::string, char> m_byte_decoder;
-
-private:
-    std::vector<std::string> bpe(const std::string& token);
-};
-
-std::optional<GPT2Tokenizer> GPT2Tokenizer::load(std::string_view vocab_file, std::string_view merges_file) {
+static std::optional<GPT2Tokenizer> load(std::string_view vocab_file, std::string_view merges_file) {
 
     // load merges file
     std::ifstream merges_file_stream;
@@ -128,16 +107,17 @@ std::optional<GPT2Tokenizer> GPT2Tokenizer::load(std::string_view vocab_file, st
 }
 
 
-std::vector<int64_t> GPT2Tokenizer::encode(const std::string& text) {
-    std::vector<std::string> tokens = tokenize(text);
-    std::vector<int64_t> token_ids;
-    token_ids.reserve(tokens.size());
-    std::transform(tokens.begin(), tokens.end(), std::back_inserter(token_ids),
-                   [this](const std::string& token){
-                       return m_encoder[token]; 
-                   });
+    std::vector<int64_t> encode(const std::string& text){
+        std::vector<std::string> tokens = tokenize(text);
+        std::vector<int64_t> token_ids;
+        token_ids.reserve(tokens.size());
+        std::transform(tokens.begin(), tokens.end(), std::back_inserter(token_ids),
+                    [this](const std::string& token){
+                        return m_encoder[token]; 
+                    });
     return token_ids;
 }
+
 
 size_t codepoint_length(const char c) {
     if((c & 0xf8) == 0xf0) return 4;
@@ -146,7 +126,7 @@ size_t codepoint_length(const char c) {
     else return 1;
 }
 
-std::string GPT2Tokenizer::decode(const std::vector<int64_t>& token_ids) {
+    std::string decode(const std::vector<int64_t>& token_ids) {
     std::string decoded_string;
     for (const auto& id: token_ids) {
         std::string decoded_token = m_decoder[id];
@@ -158,12 +138,15 @@ std::string GPT2Tokenizer::decode(const std::vector<int64_t>& token_ids) {
     }
     return decoded_string;
 }
-
-
-std::vector<std::string> GPT2Tokenizer::tokenize(const std::string& text) {
+    std::vector<std::string> tokenize(const std::string& text) {
     std::vector<std::string> result;
-    for (auto match: ctre::range<pattern>(text)) {
-        std::string token = match.to_string();
+    auto words_begin =
+        std::sregex_iterator(text.begin(), text.end(), pattern);
+    auto words_end = std::sregex_iterator();
+
+    for (std::sregex_iterator i = words_begin; i != words_end; ++i) {
+        std::smatch match = *i;
+        std::string token  = match.str();
         std::string byte_token;
         for (const auto& t: token) {
             byte_token += m_byte_encoder[t];
@@ -176,9 +159,20 @@ std::vector<std::string> GPT2Tokenizer::tokenize(const std::string& text) {
     return result;
 }
 
+    size_t vocab_size() const noexcept { return m_encoder.size(); }
+    
+protected:
 
-std::vector<std::string> GPT2Tokenizer::bpe(const std::string& token) {
+    GPT2Tokenizer() = default;
 
+    BPERanks m_bpe_ranks;
+    Encoder m_encoder;
+    Decoder m_decoder;
+    std::unordered_map<char, std::string> m_byte_encoder;
+    std::unordered_map<std::string, char> m_byte_decoder;
+
+private:
+    std::vector<std::string> bpe(const std::string& token) {
     std::vector<BPERanks::const_iterator> ranks;
     std::vector<std::string> word;
     ranks.reserve(token.size()-1);
@@ -255,3 +249,4 @@ std::vector<std::string> GPT2Tokenizer::bpe(const std::string& token) {
 
     return word;
 }
+};

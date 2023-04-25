@@ -35,7 +35,7 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
 
     // tokenizer;
     // get current directory
-    std::string current = std::filesystem::current_path();
+    std::string current = std::filesystem::current_path().string();
 
     std::cout << current + "/model.bin" << std::endl;
     // if no file exists, suggest converting one

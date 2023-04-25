@@ -43,7 +43,7 @@ jobs:
     - name: run bat file
       run: |
         cd examples/terminalchat &&
-        ./build.bat
+        ./buildbasic.bat
 
     # package ./release into a zip and upload it as an artifact
     - name: Upload Release

@@ -93,7 +93,7 @@
 #endif
 
 #ifdef _MSC_VER
-#define SIMDJSON_VISUAL_STUDIO 1
+#define SIMDJSON_VISUAL_STUDIO
 /**
  * We want to differentiate carefully between
  * clang under visual studio and regular visual
