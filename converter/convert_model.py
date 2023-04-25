@@ -70,7 +70,7 @@ class ConvertRWKV(torch.nn.Module):
             self.__dict__[keysp+"ranges"] = torch.stack([x[1] for x in weights]).to(dtype=torch.float32, memory_format=torch.contiguous_format)
             self.__dict__[keysp+"zp"] = torch.stack([x[2] for x in weights]).to(dtype=torch.float32, memory_format=torch.contiguous_format)
             for x in tqdm(range(layers), desc=f"Cleaning {key}"):
-                del w[f"blocks.{x}.{key}"]
+                w[f"blocks.{x}.{key}"] = None
             del weights 
             gc.collect()
             torch.cuda.empty_cache()
