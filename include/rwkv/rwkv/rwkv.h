@@ -134,12 +134,18 @@ class RWKV {
         double* statepp;
         double* statedd;
 
+        bool ready = false;
+
         RWKV() {
             
         };
 
         // Load from .bin file
         void loadFile(const std::string& filename) {
+            if(ready){
+                throw std::runtime_error("RWKV already loaded");
+            }
+
             std::tie(num_layers, num_embed) = load(filename, tensors);
             statexy = new double[num_layers*num_embed];
             stateaa = new double[num_layers*num_embed];
@@ -156,6 +162,8 @@ class RWKV {
             for (unsigned long long i = 0; i < 50277; i++) {
                 out[i] = 0;
             }
+
+            ready = true;
         };
 
         // Get number of elements in a tensor
@@ -171,6 +179,10 @@ class RWKV {
         
 
         float* forward(unsigned long long token){
+
+            if(!ready){
+                throw std::runtime_error("RWKV not loaded");
+            }
 
             // copy the state into the gpu
             setState(num_layers, num_embed, (double*)(tensors[STATEXY]), (double*)(tensors[STATEAA]), (double*)(tensors[STATEBB]), (double*)(tensors[STATEPP]), (double*)(tensors[STATEDD]), statexy, stateaa, statebb, statepp, statedd);
@@ -203,9 +215,14 @@ class RWKV {
 
         // destructor
         ~RWKV() {
+            delete[] out;
+
+            if(!ready){
+                return;
+            }
+
             freeTensors(tensors);
             delete[] tensors;
-            delete[] out;
             delete[] statexy;
             delete[] stateaa;
             delete[] statebb;
