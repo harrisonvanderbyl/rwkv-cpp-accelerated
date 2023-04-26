@@ -621,7 +621,7 @@ char* getName(unsigned long long i);
 // ptrs, n_layers, n_embed
 
 template <typename DType>
-static inline DType *load_tensor(const DType *input, int64_t size)
+static inline DType *load_tensor_gpu(const DType *input, int64_t size)
 {
     DType first = ((DType *)input)[0];
     DType last = ((DType *)input)[size / sizeof(DType) - 1];
@@ -631,6 +631,19 @@ static inline DType *load_tensor(const DType *input, int64_t size)
     cudaMemcpy(cuda_mem, input, size, cudaMemcpyHostToDevice);
 
     return cuda_mem;
+}
+
+template <typename DType>
+static inline DType *load_tensor_cpu(const DType *input, int64_t size)
+{
+    DType first = ((DType *)input)[0];
+    DType last = ((DType *)input)[size / sizeof(DType) - 1];
+    std::cout << +first << '\t' << +last <<  '\t' << int(size/sizeof(DType)) << '\t' << float(size/1024/1024) << "MB" << std::endl;
+    DType *cpu_mem;
+    cpu_mem = (DType *)malloc(size);
+    memcpy(cpu_mem, input, size);
+
+    return cpu_mem;
 }
 
 std::tuple<unsigned long long,unsigned long long> load (const std::string& filename, int** ptrs) {
@@ -647,16 +660,11 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
     std::cout << "n_layers: " << n_layers << std::endl;
     std::cout << "n_embed: " << n_embed << std::endl;
 
-    
-  
     char* current = (char*)map.addr + sizeof(int64_t) * 2;
 
     for(int64_t i = 0; i < 46; i++) {
         char* buffer;
         int64_t size = getSize(i, n_layers, n_embed);
-
-        if (i == 1)
-            continue; // keep EMB on CPU
 
         if(Mtypes(i) == sizeof(double)){
             buffer = current;
@@ -674,17 +682,24 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
         std::cout << "loading " << i << " [" << getName(i) << "]\t";
         current += size;
 
+        if (i == 1)
+        {
+            std::cout << "float\t";
+            ptrs[i] = (int*)load_tensor_cpu((const float*)buffer, size);
+            continue; // keep EMB on CPU
+        }
+
         if(Mtypes(i) == sizeof(float)) {
             std::cout << "float\t";
-            ptrs[i] = (int*)load_tensor((const float*)buffer, size);
+            ptrs[i] = (int*)load_tensor_gpu((const float*)buffer, size);
         }
         else if(Mtypes(i) == sizeof(double)) {
             std::cout << "double\t";
-            ptrs[i] = (int*)load_tensor((const double*)buffer, size);
+            ptrs[i] = (int*)load_tensor_gpu((const double*)buffer, size);
         }
         else if(Mtypes(i) == sizeof(uint8_t)) {
             std::cout << "uint8_t\t";
-            ptrs[i] = (int*)load_tensor((const uint8_t*)buffer, size);
+            ptrs[i] = (int*)load_tensor_gpu((const uint8_t*)buffer, size);
         }
     }
 
