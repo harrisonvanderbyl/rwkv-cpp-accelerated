@@ -655,7 +655,7 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
         char* buffer;
         int64_t size = getSize(i, n_layers, n_embed);
 
-        if (i == EMBED)
+        if (i == 1)
             continue; // keep EMB on CPU
 
         if(Mtypes(i) == sizeof(double)){
