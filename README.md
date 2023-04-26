@@ -1,5 +1,5 @@
-# RWKV Cuda
 
+# RWKV Cuda [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DUnexplored_Horizons%26type%3Dpatrons&style=flat)](https://patreon.com/Unexplored_Horizons)
 This is a super simple c++/cuda implementation of rwkv with no pytorch/libtorch dependencies.
 
 included is a simple example of how to use in both c++ and python.
@@ -77,10 +77,6 @@ Make sure you have python + torch, tqdm and Ninja packages installed.
 
 
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
-
-
-### Support me on Patreon
-https://www.patreon.com/Unexplored_Horizons
 
 C++ tokenizer came from this project:
 https://github.com/gf712/gpt2-cpp/
