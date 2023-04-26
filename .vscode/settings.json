@@ -95,7 +95,13 @@
         "xlocbuf": "cpp",
         "xlocmes": "cpp",
         "xlocmon": "cpp",
-        "xloctime": "cpp"
+        "xloctime": "cpp",
+        "strstream": "cpp",
+        "csignal": "cpp",
+        "any": "cpp",
+        "coroutine": "cpp",
+        "source_location": "cpp",
+        "future": "cpp"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "cmake.sourceDirectory": "C:/Users/harrb/Desktop/rwkv/rwkv-cpp-cuda/examples/terminalchat"
