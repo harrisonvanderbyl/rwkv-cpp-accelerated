@@ -79,7 +79,8 @@ Make sure you have python + torch, tqdm and Ninja packages installed.
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
 
 
-
+### Support me on Patreon
+https://www.patreon.com/Unexplored_Horizons
 
 C++ tokenizer came from this project:
 https://github.com/gf712/gpt2-cpp/
