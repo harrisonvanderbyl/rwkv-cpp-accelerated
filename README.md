@@ -16,13 +16,13 @@ included is a simple example of how to use in both c++ and python.
 * Native tokenizer!
 * Windows Support!
 * Distributable programs! (check actions for the prebuilt example apps)
+* [Godot module](https://github.com/harrisonvanderbyl/godot-rwkv)
 
 ### Roadmap
 
 * Optimize .pth converter (currently uses a lot of ram)
 * Better uint8 support ( currently only uses Q8_0 algorythm)
 * Fully fleshed out demos
-* Godot module
 
 ## Run example app
 1) go to the actions tab
