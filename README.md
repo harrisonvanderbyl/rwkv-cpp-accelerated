@@ -54,13 +54,30 @@ Make sure you already installed CUDA Toolkit and Visual Studio 2022.
 
 ## Convert the model into the format
 
-Make sure you have python, torch installed
+You can download the weights of the model here:
+https://huggingface.co/BlinkDL/rwkv-4-raven/tree/main
+
+For conversion to a .bin model you can choose between 2 options:
+
+### GUI option
+
+Make sure you have python + torch, tkinter, tqdm and Ninja packages installed.
 ```
-> cd export
-> python3 export.py
+> cd converter
+> python3 convert_model.py
 ```
 
+### CLI option
+
+Make sure you have python + torch, tqdm and Ninja packages installed.
+```
+> cd converter
+> python3 convert_model.py your_downloaded_model.pth
+```
+
+
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
+
 
 
 

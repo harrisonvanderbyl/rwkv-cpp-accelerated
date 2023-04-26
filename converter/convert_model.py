@@ -1,18 +1,21 @@
 import os
 import gc
-import tkinter
+import sys
+import argparse
 
 import torch
 
 from torch.utils.cpp_extension import load as torch_load_cpp
-from tkinter import filedialog
-from tqdm import tqdm
+from tqdm.auto import tqdm
+
 current_path = os.path.dirname(os.path.abspath(__file__))
+
+
 class ConvertRWKV(torch.nn.Module):
 
     def __init__(self, w, dims, layers):
         super().__init__()
-        
+
         self.emptyState = layers * [[[0]*dims]*4+[[-1e30]*dims]]
         vustatea = torch.tensor([self.emptyState[i][0] for i in range(layers)]).double().contiguous()
         vustateb = torch.tensor([self.emptyState[i][2] for i in range(layers)]).double().contiguous()
@@ -22,19 +25,23 @@ class ConvertRWKV(torch.nn.Module):
         self.emptyState = [vustatea,vustateb,vustatec,vustated,vustatee]
 
         self.emb =  w["emb.weight"].float().contiguous()
-        
-        
+
+
         sn = ["blocks.0.ln0.weight","blocks.0.ln0.bias"]
         for i in range(layers):
-            sn.append(f"blocks.{i}.ln1.weight")
-            sn.append(f"blocks.{i}.ln1.bias")
-            sn.append(f"blocks.{i}.ln2.weight")
-            sn.append(f"blocks.{i}.ln2.bias")
+            sn.extend(
+                (
+                    f"blocks.{i}.ln1.weight",
+                    f"blocks.{i}.ln1.bias",
+                    f"blocks.{i}.ln2.weight",
+                    f"blocks.{i}.ln2.bias",
+                )
+            )
         sn += [
             "ln_out.weight",
             "ln_out.bias"
         ]
-        
+
         self.cudalnin = torch.stack (
             [w[x] for x in sn]).double().contiguous()
         self.mixk = [w[f"blocks.{i}.att.time_mix_k"].squeeze() for i in range(layers)]
@@ -61,28 +68,34 @@ class ConvertRWKV(torch.nn.Module):
             "ffn.receptance.weight",
             "att.output.weight"
         ]
-        for key in toQuantize:
+
+        # tqdm creates nice progress bar around the conversion process
+        for key in tqdm(toQuantize, desc="Quantizing"):
             weights =[self.quantize_matrix(w[f"blocks.{i}.{key}"] ) for i in tqdm(range(layers), desc=f"Quantizing {key}")]
             print("stacking weights")
             keysp = key.split(".")[:2]
-            keysp = "".join(keysp)                
-            self.__dict__[keysp+"weights"] = torch.stack([x[0] for x in weights])
-            self.__dict__[keysp+"ranges"] = torch.stack([x[1] for x in weights]).to(dtype=torch.float32, memory_format=torch.contiguous_format)
-            self.__dict__[keysp+"zp"] = torch.stack([x[2] for x in weights]).to(dtype=torch.float32, memory_format=torch.contiguous_format)
+            keysp = "".join(keysp)
+            self.__dict__[f"{keysp}weights"] = torch.stack([x[0] for x in weights])
+            self.__dict__[f"{keysp}ranges"] = torch.stack(
+                [x[1] for x in weights]
+            ).to(dtype=torch.float32, memory_format=torch.contiguous_format)
+            self.__dict__[f"{keysp}zp"] = torch.stack([x[2] for x in weights]).to(
+                dtype=torch.float32, memory_format=torch.contiguous_format
+            )
             for x in tqdm(range(layers), desc=f"Cleaning {key}"):
                 w[f"blocks.{x}.{key}"] = None
-            del weights 
+            del weights
             gc.collect()
             torch.cuda.empty_cache()
-        
-        
+
+
         self.cudahead, self.cudaheadr, self.cudaheadzp = self.quantize_matrix(w["head.weight"])
         self.cudahead = self.cudahead.to(dtype=torch.uint8, memory_format=torch.contiguous_format)
         del w
 
         self.dim = dims
         self.layers = layers
-        
+
         self.rx = torch.arange((self.dim), dtype = torch.double)
         self.buffer0 = torch.arange(self.dim, dtype=torch.double)
         self.buffer1 = torch.arange(50277, dtype=torch.float)
@@ -105,7 +118,7 @@ class ConvertRWKV(torch.nn.Module):
         
         return [out.t().to(torch.uint8).contiguous(),ran.to(torch.float32).clone(), mini.to(torch.float32).clone()]
 
-   
+
     def save_converted(self):
         # save as .bin file
         # get currentpath ..
@@ -166,18 +179,34 @@ class ConvertRWKV(torch.nn.Module):
         )
 
 
+def is_valid_weights_file(weights: dict) -> bool:
+    required_keys = [
+        "emb.weight",
+        "ln_out.weight",
+        "ln_out.bias",
+        "blocks.0.ln0.weight",
+        "blocks.0.ln0.bias",
+        # Add other keys as needed
+    ]
+    return all(key in weights for key in required_keys)
+
+
+
 def convert_model(path: str):
     
-
     torch_load_cpp(
         name="wkv_cuda_export",
-        sources=["cpp_save_tensor.cpp"],
+        sources=[os.path.join(current_path, "cpp_save_tensor.cpp")],
         # add ../include to include path
         extra_include_paths=[os.path.join(current_path, "../include/rwkv/rwkv")],
         )
 
     w = torch.load(path, map_location="cpu")
-    # detach weights
+    
+    # Verify the file contents
+    if not is_valid_weights_file(w):
+        print("Invalid weights file structure. Please provide a valid .pth file.")
+        sys.exit(1)
 
     dims = len(w["blocks.0.att.key.weight"])
     layers = len(
@@ -186,14 +215,37 @@ def convert_model(path: str):
     convert_model_instance = ConvertRWKV(w, dims, layers)
     convert_model_instance.save_converted()
 
-# ui library for choosing file
-def chooseFile():
-    # only .pth files
-    root = tkinter.Tk()
-    root.withdraw()
-    file_path = filedialog.askopenfilename(
-        filetypes=[("PyTorch Weights", "*.pth")])
-    return file_path
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Convert a model to a binary format.", add_help=False)
+    parser.add_argument("path", nargs='?', type=argparse.FileType('rb'), help="Path to the model file (.pth).")
+    args, unknown = parser.parse_known_args()
+
+    if args.path:
+        model_path = args.path.name
+    else:
+        try:
+            import tkinter
+            from tkinter import filedialog
+
+            def chooseFile():
+                root = tkinter.Tk()
+                root.withdraw()
+                file_path = filedialog.askopenfilename(
+                    filetypes=[("PyTorch Weights", "*.pth")])
+                return file_path
+
+            model_path = chooseFile()
+        except ImportError:
+            print("tkinter not found, falling back to command line argument")
+            parser.print_help()
+            sys.exit(1)
+
+    if model_path:
+        convert_model(model_path)
+    else:
+        print("No model file selected. Exiting.")
 
 if __name__ == "__main__":
-    convert_model(chooseFile())
+    main()
