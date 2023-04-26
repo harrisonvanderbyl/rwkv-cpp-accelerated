@@ -1,4 +1,3 @@
-// cppimport
 #include <pybind11/pybind11.h>
 
 #include "rwkv.h"
@@ -7,16 +6,16 @@ namespace py = pybind11;
 
 RWKV Rwkv = RWKV();
 
-std::vector<double> initState(){
+std::vector<double*> initState(){
 
     assert(Rwkv.statexy != NULL);
 
     // Create a new vector of 5 tensors that have the data_ptr from Rwkv
-    statexy = new double[Rwkv.num_layers*Rwkv.num_embed];
-    stateaa = new double[Rwkv.num_layers*Rwkv.num_embed];
-    statebb = new double[Rwkv.num_layers*Rwkv.num_embed];
-    statepp = new double[Rwkv.num_layers*Rwkv.num_embed];
-    statedd = new double[Rwkv.num_layers*Rwkv.num_embed];
+    double* statexy = new double[Rwkv.num_layers*Rwkv.num_embed];
+    double* stateaa = new double[Rwkv.num_layers*Rwkv.num_embed];
+    double* statebb = new double[Rwkv.num_layers*Rwkv.num_embed];
+    double* statepp = new double[Rwkv.num_layers*Rwkv.num_embed];
+    double* statedd = new double[Rwkv.num_layers*Rwkv.num_embed];
 
     for (unsigned long long i = 0; i < Rwkv.num_layers*Rwkv.num_embed; i++) {
         statexy[i] = 0;
@@ -27,7 +26,7 @@ std::vector<double> initState(){
     }
 
     for (unsigned long long i = 0; i < 50277; i++) {
-        out[i] = 0;
+        Rwkv.out[i] = 0;
     }    
 
     return {statexy, stateaa, statebb, statepp, statedd};
@@ -44,15 +43,10 @@ void cuda_rwkv_wrapper(int64_t token){
 }
 
 
-PYBIND11_MODULE(binding, m) {
+PYBIND11_MODULE(c_binding, m) {
     m.def("rwkvc", &cuda_rwkv_wrapper, "rwkvc");
     m.def("load", &loadWrapper, "load");
     m.def("initState", &initState, "initState");
 
 }
 
-/*
-<%
-setup_pybind11(cfg)
-%>
-*/
