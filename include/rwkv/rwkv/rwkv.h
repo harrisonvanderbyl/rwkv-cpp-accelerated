@@ -71,6 +71,8 @@ void setState(unsigned long long n_embed, unsigned long long n_layers,
 void getOutput(unsigned long long n_embed, unsigned long long n_layers, float* logitsin, double* statexyin, double* stateaain, double* statebbin, double* stateppin, double* stateddin, 
         float* logitsout, double* statexyout, double* stateaaout, double* statebbout, double* stateppout, double* stateddout);
 
+void freeTensors(int** ptrs);
+
 const unsigned long f = sizeof(float);
 const unsigned long d = sizeof(double);
 const unsigned long g = sizeof(uint8_t);
@@ -198,6 +200,18 @@ class RWKV {
 
             return out;
         }
+
+        // destructor
+        ~RWKV() {
+            freeTensors(tensors);
+            delete[] tensors;
+            delete[] out;
+            delete[] statexy;
+            delete[] stateaa;
+            delete[] statebb;
+            delete[] statepp;
+            delete[] statedd;
+        };
 
 };
 

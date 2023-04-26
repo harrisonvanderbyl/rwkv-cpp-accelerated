@@ -704,3 +704,14 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
     return std::make_tuple(n_layers, n_embed);
 
 }
+
+void freeTensors(int** ptrs) {
+    for(unsigned long long i = 0; i < 46; i++) {
+        if (i == 1) // embedding table, stays on cpu
+        {
+            delete[] ptrs[i];
+            continue;
+        }
+        cudaFree(ptrs[i]);
+    }
+}
