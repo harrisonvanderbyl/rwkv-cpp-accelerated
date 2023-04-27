@@ -642,58 +642,25 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
 
     for(unsigned long long i = 0; i < 46; i++) {
         unsigned long long size = getSize(i, n_layers, n_embed);
-        if(Mtypes(i) == sizeof(double)){
-            ptrs[i] = (int*)(new double[size]);
-        } else if(Mtypes(i) == sizeof(float)) {
-            ptrs[i] = (int*)(new float[size]);
-        } else if(Mtypes(i) == sizeof(uint8_t)) {
-            ptrs[i] = (int*)(new uint8_t[size]);
-        } else {
-            std::cout << "Error: size not supported" << std::endl;
-            exit(1);
-        }
+
+        // malloc
+        ptrs[i] = (int*)malloc(size*Mtypes(i));
+
         std::cout << "loading: " << getName(i) << "\n";
-        binfile.read((char*)(ptrs[i]), size*Mtypes(i));
+
+        binfile.read(ptrs[i], size*Mtypes(i));
 
         if( i == 1) // embedding table, stays on cpu
             continue;
 
-        if(Mtypes(i) == sizeof(float)){
-            float first = ((float*)ptrs[i])[0];
-            float last = ((float*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("float %d: %f %f %d\n", (i), first, last, (getSize(i,n_layers,n_embed)));
-            float* cuda_mem;
-            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
-            cudaMemcpy(cuda_mem, (float*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
-            // sync
-            cudaDeviceSynchronize();
-            free(ptrs[i]);
-            ptrs[i] = (int*)cuda_mem;
-        }
-        else if(Mtypes(i) == sizeof(double)){
-            double firstd = ((double*)ptrs[i])[0];
-            double lastd = ((double*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("double %d: %f %f %d\n",  (i), firstd, lastd, (getSize(i,n_layers,n_embed)));
-            double* cuda_mem;
-            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
-            cudaMemcpy(cuda_mem, (double*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
-            // sync
-            cudaDeviceSynchronize();
-            free(ptrs[i]);
-            ptrs[i] = (int*)cuda_mem;
-        }
-        else if(Mtypes(i) == sizeof(uint8_t)){
-            uint8_t firstu = ((uint8_t*)ptrs[i])[0];
-            uint8_t lastu = ((uint8_t*)ptrs[i])[getSize(i,n_layers,n_embed)-1];
-            printf("uint8_t %d: %d %d %lld\n",  (i), (firstu), (lastu), (getSize(i,n_layers,n_embed)));
-            uint8_t* cuda_mem;
-            cudaMalloc(&cuda_mem, getSize(i,n_layers,n_embed) * Mtypes(i));
-            cudaMemcpy(cuda_mem, (uint8_t*)ptrs[i], getSize(i,n_layers,n_embed) * Mtypes(i), cudaMemcpyHostToDevice);
-            // sync
-            cudaDeviceSynchronize();
-            free(ptrs[i]);
-            ptrs[i] = (int*)cuda_mem;
-        }
+        void* cuda_mem;
+        cudaMalloc(&cuda_mem, size * Mtypes(i));
+        cudaMemcpy(cuda_mem, ptrs[i], size * Mtypes(i), cudaMemcpyHostToDevice);
+        // sync
+        cudaDeviceSynchronize();
+        free(ptrs[i]);
+        ptrs[i] = (int*)cuda_mem;
+        
     }
     
     binfile.close();
