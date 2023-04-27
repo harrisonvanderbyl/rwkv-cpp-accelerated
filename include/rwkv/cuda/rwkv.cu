@@ -648,7 +648,7 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
 
         std::cout << "loading: " << getName(i) << "\n";
 
-        binfile.read(ptrs[i], size*Mtypes(i));
+        binfile.read((char*)ptrs[i], size*Mtypes(i));
 
         if( i == 1) // embedding table, stays on cpu
             continue;
