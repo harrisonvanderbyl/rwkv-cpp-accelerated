@@ -31,14 +31,9 @@ void* initTokenizer(const std::string& vocab_filename, const std::string& merges
 void initRwkvOutput(void* rwkvp) {
     RWKV* rwkv = static_cast<RWKV*>(rwkvp);
 
-    py::array_t<float> out_array = py::array_t<float>(50277);
-    py::buffer_info out_buf = out_array.request();
-
-    rwkv->out  = (float*)out_buf.ptr;
-
     for (unsigned long long i = 0; i < 50277; i++) {
-	    rwkv->out[i] = 0;
-	}
+        rwkv->out[i] = 0;
+    }
 
 }
 
