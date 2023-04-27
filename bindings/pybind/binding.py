@@ -1,39 +1,23 @@
 import os
 import copy
 
-import torch
-import numpy as np
-
-from typing import List
-
-from tqdm import tqdm
-
 import rwkv
-
 
 class RwkvCppWrapper:
 
 
     def __init__(self, model_path: str):
+        self.cpp_rwkv = rwkv.initRwkv()
+        layers, embed = rwkv.loadModel(self.cpp_rwkv, model_path)
+        print(layers)
+        print(embed)
 
-        layers, embed = rwkv.load(model_path)
-        self.output = rwkv.initOutput()
-        self.state = rwkv.initState()
-        print(self.state)
-        print(rwkv.getRwkvState())
-        self.emptyState = [
-            np.copy(state) for state in self.state
-        ]
+        rwkv.initOutput(self.cpp_rwkv)
+        rwkv.initState(self.cpp_rwkv)
+
+
+    def forward(self, token: int):
+        rwkv.modelForward(self.cpp_rwkv, token)
         
-
-    def forward(self, token: int, state: List[np.array]):
-        print("forward")
-        for i,o in enumerate(state):
-            # copy values in without changing the pointer
-            self.state[i] = copy.deepcopy(o)
-
-        rwkv.rwkvc(token)
-        torch.cuda.synchronize()
-        
-        return self.output, [np.copy(state) for state in self.state]
+        return rwkv.getOutput(self.cpp_rwkv), rwkv.getState(self.cpp_rwkv)
      
