@@ -6,25 +6,20 @@ os.environ["SO_LIB_PATH"] = "bindings.pybind.rwkv"
 from bindings.pybind import binding
 
 
-
 t1 = time.time()
-model = binding.ModelWrapper("model-3b.bin")
+model = binding.ModelWrapper(model_path="model-3b.bin")
 print(f"Loading time {time.time() - t1}s")
 
 t1 = time.time()
 tokenizer = binding.TokenizerWrapper(
-        "./include/rwkv/tokenizer/vocab/vocab.json", 
-        "./include/rwkv/tokenizer/vocab/merges.txt"
+        vocab_path="./include/rwkv/tokenizer/vocab/vocab.json", 
+        merges_path="./include/rwkv/tokenizer/vocab/merges.txt"
         )
 
 print(f"Loading time {time.time() - t1}s")
 
-binding.CPP_LIB.initState(model.cpp_instance)
 tokenized_prompt = tokenizer.encode("To see the world in a grain of")
-for token in tokenized_prompt:
-    print(token)
-    output, state = model.forward(token)
-
+model.init_state(tokenized_prompt)
 
 output_tokens_decoded = [tokenizer.decode(token) for token in tokenized_prompt]
 print(output_tokens_decoded)
