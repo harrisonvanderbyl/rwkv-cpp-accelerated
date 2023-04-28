@@ -19,7 +19,8 @@ tokenizer = binding.TokenizerWrapper(
 print(f"Loading time {time.time() - t1}s")
 
 tokenized_prompt = tokenizer.encode("To see the world in a grain of")
-model.init_state(tokenized_prompt)
+model.init_state()
+model.load_context(tokenized_prompt)
 
 output_tokens_decoded = [tokenizer.decode(token) for token in tokenized_prompt]
 print(output_tokens_decoded)

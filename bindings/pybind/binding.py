@@ -2,7 +2,7 @@ import os
 import copy
 import importlib
 
-from typing import Tuple
+from typing import Iterable
 
 SO_LIB_PATH = os.environ.get("SO_LIB_PATH", "rwkv")
 
@@ -14,7 +14,6 @@ class ModelWrapper:
             self, 
             *,
             model_path: str,
-            so_lib_name="rwkv",
             ):
 
         self.cpp_instance = CPP_LIB.initRwkv()
@@ -27,10 +26,23 @@ class ModelWrapper:
     def init_output(self):
         return CPP_LIB.initOutput(self.cpp_instance)
 
-    def init_state(self, tokens: Tuple[int] = ()):
-        CPP_LIB.initState(self.cpp_instance)
+
+    def init_state(self):
+        return CPP_LIB.initState(self.cpp_instance)
+
+
+    def get_output(self):
+        return CPP_LIB.getOutput(self.cpp_instance)
+
+
+    def get_state(self):
+        return CPP_LIB.getState(self.cpp_instance)
+
+
+    def load_context(self, tokens: Iterable[int]):
         for token in tokens:
             self.forward(token)
+
 
     def sample(self):
         return CPP_LIB.typicalSample(self.cpp_instance)
@@ -39,10 +51,7 @@ class ModelWrapper:
     def forward(self, token: int):
         CPP_LIB.modelForward(self.cpp_instance, token)
         
-        return (
-                CPP_LIB.getOutput(self.cpp_instance), 
-                CPP_LIB.getState(self.cpp_instance)
-                )
+        return (self.get_output(), self.get_state())
      
 
 class TokenizerWrapper:
