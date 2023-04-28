@@ -2,6 +2,7 @@
 #include "ATen/ATen.h"
 #include "rwkv.h"
 #include <iostream>
+#include <fstream>
 // generic T either float or fp16 or fp64
 
 
