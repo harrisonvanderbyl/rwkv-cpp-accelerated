@@ -3,6 +3,7 @@ import os
 from dataclasses import dataclass
 
 from flask import Flask
+from flask import request
 
 app = Flask(__name__)
 
@@ -32,4 +33,4 @@ def add_message():
 
 
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=80)
+    app.run(host="0.0.0.0", port=8080)
