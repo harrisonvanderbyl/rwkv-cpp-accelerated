@@ -3,7 +3,7 @@ import time
 
 from typing import List, Callable
 
-from bindings.bindings import binding
+from bindings.pybind import binding
 
 
 def generate_tokens(
