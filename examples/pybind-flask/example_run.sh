@@ -1,0 +1,1 @@
+SO_LIB_PATH='bindings.pybind.rwkv' MODEL_PATH=model-3b.bin VOCAB_PATH=./include/rwkv/tokenizer/vocab/vocab.json MERGES_PATH=./include/rwkv/tokenizer/vocab/merges.txt PYTHONPATH=. python3 examples/pybind-flask/server.py 
