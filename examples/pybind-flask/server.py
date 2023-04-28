@@ -54,18 +54,17 @@ def complete_string(complete: CompleteRequestDataclass):
             input_tokens=input_tokens,
             tokens_to_generate=complete.tokens
             )
-    stop_sequence_window = complete.stop_sequence * -1
+    stop_sequence_window = complete.stop_sequence * -1 if complete.stop_sequence else None
 
     return_string = complete.body if complete.with_body else ""
     for output_token in output_tokens:
         decoded_token = TOKENIZER.decode(output_token)
         return_string += decoded_token
-        print(decoded_token, end='')
         
         # if stop sequence occured(a substring of chat history containing reverse sequence)
         # then we need to reprompt here
 
-        if return_string[stop_sequence_window:] == complete.stop_sequence:
+        if complete.stop_sequence and return_string[stop_sequence_window:] == complete.stop_sequence:
             # need to reprompt here
             break
 
