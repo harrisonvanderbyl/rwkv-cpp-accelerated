@@ -2,13 +2,18 @@ FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 as build_base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
-RUN apt-get update && apt-get install -y software-properties-common && add-apt-repository ppa:deadsnakes/ppa && apt-get install -y python3.9 python3.9-distutils pip python3.9-dev
-RUN python3.9 -m pip install pybind11
+RUN apt-get update && apt-get install -y pip
+RUN pip install pybind11
 
 WORKDIR /build
 
 COPY ./bindings/pybind/ /build/pybind/
 COPY ./include/ /build/include/
 
-RUN nvcc -O3 -Xcompiler -fPIC -shared ./pybind/c_binding.cpp ./include/rwkv/cuda/rwkv.cu -I./include $(python3.9 -m pybind11 --includes) -o rwkv.so
+RUN nvcc -O3 -Xcompiler -fPIC -shared ./pybind/c_binding.cpp ./include/rwkv/cuda/rwkv.cu -I./include $(python3 -m pybind11 --includes) -o rwkv.so
+
+FROM nvidia/cuda:12.1.1-base-ubuntu22.04
+
+RUN apt-get update && apt-get install -y pip
+COPY --from=build_base /build/rwkv.so /app/
 
