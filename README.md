@@ -28,7 +28,7 @@ included is a simple example of how to use in both c++ and python.
 1) go to the actions tab
 2) find a green checkmark for your platform
 3) download the executable
-4) download or convert a model (download links pending)
+4) download or convert a model ([downloads here[(https://huggingface.co/nenkoru/rwkv-cuda-cpp/tree/main))
 5) place the model.bin file in the same place as the executable
 6) run the executable
 
