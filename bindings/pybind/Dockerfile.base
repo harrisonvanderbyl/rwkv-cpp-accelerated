@@ -12,6 +12,10 @@ COPY ./include/ /build/include/
 
 RUN nvcc -O3 -Xcompiler -fPIC -shared ./pybind/c_binding.cpp ./include/rwkv/cuda/rwkv.cu -I./include $(python3 -m pybind11 --includes) -o rwkv.so
 
+# Due to issues happening around a glibc version used in a building
+# image above, there is no easy and straightforward way to use
+# official python-buster images, hence we use a base cuda
+# image with python3.10 on-board
 FROM nvidia/cuda:12.1.1-base-ubuntu22.04
 
 RUN apt-get update && apt-get install -y pip
