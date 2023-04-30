@@ -7,7 +7,7 @@ RUN pip install pybind11
 
 WORKDIR /build
 
-COPY ./bindings/pybind/ /build/pybind/
+COPY ./bindings/pybind/c_binding.cpp /build/pybind/
 COPY ./include/ /build/include/
 
 RUN nvcc -O3 -Xcompiler -fPIC -shared ./pybind/c_binding.cpp ./include/rwkv/cuda/rwkv.cu -I./include $(python3 -m pybind11 --includes) -o rwkv.so
