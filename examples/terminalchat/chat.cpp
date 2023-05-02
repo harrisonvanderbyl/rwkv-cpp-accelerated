@@ -30,7 +30,7 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
         return 1;
     };
     GPT2Tokenizer tokenizer = tokenizerop.value();
-    std::vector<int64_t> initial = tokenizer.encode(chatRecord);
+    std::vector<long long> initial = tokenizer.encode(chatRecord);
     RWKV Rwkv = RWKV();
 
     // tokenizer;
@@ -66,7 +66,7 @@ Alice: Of course! I'm glad to answer your questions or give helpful advices. You
             std::cout << "User:>";
             std::getline(std::cin, input);
             input = "Bob: " + input + "\n\nAlice:";
-            std::vector<int64_t> inputtokens = tokenizer.encode(input);
+            std::vector<long long> inputtokens = tokenizer.encode(input);
             for(int i = 0; i < inputtokens.size(); i++)
             {
                 Rwkv.forward(inputtokens[i]);

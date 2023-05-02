@@ -11,7 +11,7 @@ int main(){
         return 1;
     };
     GPT2Tokenizer tokenizer = tokenizerop.value();
-    std::vector<int64_t> initial = tokenizer.encode(initPrompt);
+    std::vector<long long> initial = tokenizer.encode(initPrompt);
     RWKV Rwkv = RWKV();
 
     // tokenizer;
@@ -89,7 +89,7 @@ int main(){
             std::cout << "\n\nPress q to return\n\nDescribe the story you want written:>";
             std::getline(std::cin, input);
             input = input + "\n\n### Response:";
-            std::vector<int64_t> inputtokens = tokenizer.encode(input);
+            std::vector<long long> inputtokens = tokenizer.encode(input);
             for(int i = 0; i < inputtokens.size(); i++)
             {
                 Rwkv.forward(inputtokens[i]);
