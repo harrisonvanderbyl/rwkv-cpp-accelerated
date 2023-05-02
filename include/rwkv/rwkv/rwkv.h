@@ -53,7 +53,7 @@ enum
     HEADR,
     HEADO
 };
-char *names[46] = {
+std::string names[46] = {
     "xbuf",
     "embed",
     "layernorms",
@@ -156,9 +156,9 @@ unsigned long long Mtypes(unsigned long long i)
     return types[i];
 }
 
-char *getName(unsigned long long i)
+const char *getName(unsigned long long i)
 {
-    return names[i];
+    return names[i].c_str();
 }
 
 class RWKV
