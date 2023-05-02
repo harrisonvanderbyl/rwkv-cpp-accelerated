@@ -133,10 +133,10 @@ std::string tokenizerDecode(void* tokenizerp, int token) {
     return tokenizer->decode({(long int)token});
 }
 
-int typicalSample(void* rwkvp) {
+int typicalSample(void* rwkvp, float temp = 0.9, float tau = 0.8) {
     RWKV* rwkv = static_cast<RWKV*>(rwkvp);
 
-    return typical(rwkv->out);
+    return typical(rwkv->out, temp, tau);
 }
 
 

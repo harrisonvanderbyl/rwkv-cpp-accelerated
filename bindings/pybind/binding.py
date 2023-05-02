@@ -44,8 +44,8 @@ class ModelWrapper:
             self.forward(token)
 
 
-    def sample(self):
-        return CPP_LIB.typicalSample(self.cpp_instance)
+    def sample(self, temp: float = 0.9, tau: float = 0.):
+        return CPP_LIB.typicalSample(self.cpp_instance, temp, tau)
 
 
     def forward(self, token: int):
