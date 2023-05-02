@@ -1,4 +1,4 @@
-FROM nvidia/cuda:12.1.1-devel-ubuntu22.04 as build_base
+FROM nvidia/cuda:11.7.1-devel-ubuntu22.04 as build_base
 
 ARG DEBIAN_FRONTEND=noninteractive
 
@@ -16,8 +16,9 @@ RUN nvcc -O3 -Xcompiler -fPIC -shared ./pybind/c_binding.cpp ./include/rwkv/cuda
 # image above, there is no easy and straightforward way to use
 # official python-buster images, hence we use a base cuda
 # image with python3.10 on-board
-FROM nvidia/cuda:12.1.1-base-ubuntu22.04
+FROM nvidia/cuda:11.7.1-base-ubuntu22.04
 
-RUN apt-get update && apt-get install -y pip
 COPY --from=build_base /build/rwkv.so /app/
+COPY ./include/rwkv/tokenizer/vocab/* /app/
+COPY ./bindings/pybind/binding.py /app/
 
