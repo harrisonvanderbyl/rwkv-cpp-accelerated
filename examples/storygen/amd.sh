@@ -1,0 +1,1 @@
+hipcc --std=c++17 ./storygen.cpp ../../include/rwkv/cuda/rwkv.hip -I../../include -o ./release/storygen --offload-arch=gfx900

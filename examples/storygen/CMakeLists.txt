@@ -40,6 +40,10 @@ if(NOT CMAKE_CUDA_COMPILER)
     # static link against hip
     # target_link_libraries(rwkv hip::device)
 
+    # add hip runtime
+    
+
+
 else()
     if(WIN32)
     else()

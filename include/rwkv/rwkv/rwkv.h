@@ -262,7 +262,6 @@ public:
         getOutput(num_layers, num_embed, (float *)(tensors[BUFFER2]), (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]),
                   out, statexy, stateaa, statebb, statepp, statedd);
 
-        std::cout << out[0] << std::endl;
         return out;
     }
 
