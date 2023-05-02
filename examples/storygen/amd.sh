@@ -1,1 +1,1 @@
-hipcc --std=c++17 ./storygen.cpp ../../include/rwkv/cuda/rwkv.hip -I../../include -o ./release/storygen --offload-arch=gfx900
+hipcc --std=c++17 ./storygen.cpp ../../include/rwkv/cuda/rwkv.hip -I../../include -o ./release/storygen --offload-arch=gfx700,gfx701,gfx702,gfx703,gfx704,gfx705,gfx801,gfx802,gfx803,gfx805,gfx810,gfx900,gfx902,gfx904,gfx906,gfx908,gfx909,gfx1010,gfx1011,gfx1012,gfx1030
