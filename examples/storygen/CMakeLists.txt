@@ -2,8 +2,6 @@ cmake_minimum_required(VERSION 3.17)
 
 # ensure CXX at least 11.3.0
 
-# if cuda is not found, throw error
-
 if(WIN32)
 else()
     set(CMAKE_CXX_COMPILER "g++")
