@@ -42,8 +42,8 @@ std::size_t TokPairHash::operator()(const std::pair<std::string, std::string> &p
 class GPT2Tokenizer {
 	using BPE = std::pair<std::string, std::string>;
 	using BPERanks = std::unordered_map<BPE, size_t, TokPairHash>;
-	using Encoder = std::unordered_map<std::string, int64_t>;
-	using Decoder = std::unordered_map<int64_t, std::string>;
+	using Encoder = std::unordered_map<std::string, long long>;
+	using Decoder = std::unordered_map<long long, std::string>;
 
 public:
 
@@ -102,9 +102,9 @@ public:
 		return result;
 	}
 
-	std::vector<int64_t> encode(const std::string &text) {
+	std::vector<long long> encode(const std::string &text) {
 		std::vector<std::string> tokens = tokenize(text);
-		std::vector<int64_t> token_ids;
+		std::vector<long long> token_ids;
 		token_ids.reserve(tokens.size());
 		std::transform(tokens.begin(), tokens.end(), std::back_inserter(token_ids),
 				[this](const std::string &token) {
@@ -124,7 +124,7 @@ public:
 			return 1;
 	}
 
-	std::string decode(const std::vector<int64_t> &token_ids) {
+	std::string decode(const std::vector<long long> &token_ids) {
 		std::string decoded_string;
 		for (const auto &id : token_ids) {
 			std::string decoded_token = m_decoder[id];
