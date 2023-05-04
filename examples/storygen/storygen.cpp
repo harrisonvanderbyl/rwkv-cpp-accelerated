@@ -98,7 +98,7 @@ int main(){
         
         Rwkv.forward(lasttoken);
         Rwkv.out[0] = -99; // <|endoftext|> token is -99
-        lasttoken = typical(Rwkv.out);
+        lasttoken = typical(Rwkv.out, 0.8,0.7);
         std::cout << tokenizer.decode({(long int)lasttoken});
         // refresh output
     

@@ -1,4 +1,4 @@
-#if !defined(__NVCC__)
+#if !defined(__NVCC__) and defined(__HIPCC__)
 // Allow HIP/amd to compile this file
 #include "hip/hip_runtime.h"
 #define cudaMalloc hipMalloc
@@ -473,8 +473,7 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
                double *decay, double *bonus,
                uint8_t *head, float *headr, float *heado)
 {
-    float *menbuf;
-    cudaMalloc((void **)&menbuf, 3 * sizeof(float));
+   
     // copy the embedding table to the gpu buffer3, using token as the index
     cudaMemcpy(buffer3, embed + token * n_emb, n_emb * sizeof(float), cudaMemcpyHostToDevice);
     // copy buffer3 to buffer1
@@ -482,7 +481,7 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
 
     float *ccmean;
     float *ccvariance;
-    std::tie(ccmean, ccvariance) = meanvar(n_emb, buffer1, menbuf);
+    std::tie(ccmean, ccvariance) = meanvar(n_emb, buffer1, ffnrbuffer);
 
     cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, layernorms, 0, ccmean, ccvariance, x);
 
@@ -493,7 +492,7 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
         // k, v, r = matmul(kmix, km), matmul(vmix, vm), matmul(rmix, rm)
         float *camean;
         float *cavariance;
-        std::tie(camean, cavariance) = meanvar(n_emb, x, menbuf);
+        std::tie(camean, cavariance) = meanvar(n_emb, x, ffnrbuffer);
 
         cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (i) + 2, camean, cavariance, buffer1);
         // buffers to 0
@@ -510,7 +509,7 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
         setx<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer2, x);
         float *zzmean;
         float *zzvariance;
-        std::tie(zzmean, zzvariance) = meanvar(n_emb, x, menbuf);
+        std::tie(zzmean, zzvariance) = meanvar(n_emb, x, ffnrbuffer);
         cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (i + 1), zzmean, zzvariance, buffer1);
         // buffer1 = ln(x)
         // ffnmixk, ffnmixv = mix(buffer1, statedd[n_emb*y], ffnmixkvr)
@@ -534,13 +533,13 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
 
     float *mean;
     float *variance;
-    std::tie(mean, variance) = meanvar(n_emb, x, menbuf);
+    std::tie(mean, variance) = meanvar(n_emb, x, ffnrbuffer);
     cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (n_layers) + 2, mean, variance, buffer1);
     cuda_memset<<<(50277 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(50277, buffer2, 0);
     cudac_mm8_one(n_emb, 50277, buffer1, head, 50277, buffer2, headr, heado, 0);
     cudaDeviceSynchronize();
 
-    cudaFree(menbuf);
+    
 }
 
 // this lazy loads the model from disk
