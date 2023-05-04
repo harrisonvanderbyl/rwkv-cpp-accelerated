@@ -644,8 +644,6 @@ std::tuple<unsigned long long,unsigned long long> load (const std::string& filen
         void* cuda_mem;
         cudaMalloc(&cuda_mem, size * Mtypes(i));
         cudaMemcpy(cuda_mem, ptrs[i], size * Mtypes(i), cudaMemcpyHostToDevice);
-        // sync
-        cudaDeviceSynchronize();
         free(ptrs[i]);
         ptrs[i] = (int*)cuda_mem;
         
