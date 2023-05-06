@@ -88,46 +88,45 @@ __global__ void kernel_mm8_threec(
 }
 
 // generic T either float or fp16 or fp64
-
 void cuda_mm8_threec(unsigned long long N,
-                     float *xy,
-                     uint8_t *w,
-                     uint8_t *w1,
-                     uint8_t *w2,
-                     float *r,
-                     float *r1,
-                     float *r2,
-                     float *o1,
-                     float *o2,
-                     float *o3,
-                     float *y,
-                     float *y1,
-                     float *y2,
-                     unsigned long long offset = 0,
-                        unsigned long long tokenlength = 1
+    float *xy,
+    uint8_t *w,
+    uint8_t *w1,
+    uint8_t *w2,
+    float *r,
+    float *r1,
+    float *r2,
+    float *o1,
+    float *o2,
+    float *o3,
+    float *y,
+    float *y1,
+    float *y2,
+    unsigned long long offset = 0,
+       unsigned long long tokenlength = 1
 
 )
 {
-    dim3 blockSize(1, MM8_ONE_TILE);
-    dim3 gridSize(MM8_ONE_JSPLIT, (N + blockSize.y - 1) / blockSize.y);
-    kernel_mm8_threec<<<gridSize, blockSize>>>(
-        N,
-        xy,
-        w,
-        w1,
-        w2,
-        r,
-        r1,
-        r2,
-        o1,
-        o2,
-        o3,
-        y,
-        y1,
-        y2,
-        offset,
-        tokenlength
-    );
+dim3 blockSize(1, MM8_ONE_TILE);
+dim3 gridSize(MM8_ONE_JSPLIT, (N + blockSize.y - 1) / blockSize.y);
+kernel_mm8_threec<<<gridSize, blockSize>>>(
+N,
+xy,
+w,
+w1,
+w2,
+r,
+r1,
+r2,
+o1,
+o2,
+o3,
+y,
+y1,
+y2,
+offset,
+tokenlength
+);
 }
 
 template <typename T_SRC, typename T_DST>
@@ -207,25 +206,20 @@ __global__ void sigmoid(
     const unsigned long long emb,
     float *__restrict__ const a,
     float *__restrict__ const out,
-    float *__restrict__ const d,
-    unsigned long long tokenlength = 1)
+    float *__restrict__ const d)
 {
-    for (unsigned long long token = 0; token < tokenlength; token++)
+    unsigned long long ii = blockIdx.x * (blockDim.x * EMBBLOCK);
+    for (unsigned long long c = 0; c < EMBBLOCK; c++)
     {
-        
-        unsigned long long ii = blockIdx.x * (blockDim.x * EMBBLOCK);
-        for (unsigned long long c = 0; c < EMBBLOCK; c++)
-        {
-            unsigned long long i = ii + threadIdx.x * EMBBLOCK + c;
+        unsigned long long i = ii + threadIdx.x * EMBBLOCK + c;
 
-            if (i < emb)
-            {
-                out[i+token*emb] = float(1.0 / (1.0 + exp(-double(a[i+token*emb]))));
-                d[i * 4+token*emb*4] = 0.0;
-                d[i * 4 + 1+token*emb*4] = 0.0;
-                d[i * 4 + 2+token*emb*4] = 0.0;
-                d[i * 4 + 3+token*emb*4] = 0.0;
-            }
+        if (i < emb)
+        {
+            out[i] = float(1.0 / (1.0 + exp(-double(a[i]))));
+            d[i * 4] = 0.0;
+            d[i * 4 + 1] = 0.0;
+            d[i * 4 + 2] = 0.0;
+            d[i * 4 + 3] = 0.0;
         }
     }
 }
@@ -283,25 +277,21 @@ __global__ void kernelc_mm8_one(
     float *__restrict__ const y,
     const float *__restrict__ const r,
     const float *__restrict__ const o,
-    const unsigned long long offset,
-    unsigned long long tokenlength = 1)
+    const unsigned long long offset)
 {
 
-    for (unsigned long long token = 0; token < tokenlength; token++)
-    {
-        const unsigned long long k = blockIdx.y * blockDim.y + threadIdx.y;
-        const unsigned long long j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
-        const unsigned long long j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long k = blockIdx.y * blockDim.y + threadIdx.y;
+    const unsigned long long j0 = min(N, blockIdx.x * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
+    const unsigned long long j1 = min(N, (blockIdx.x + 1) * ((N + MM8_ONE_JSPLIT - 1) / MM8_ONE_JSPLIT));
 
-        if (k < M)
+    if (k < M)
+    {
+        float y_local = 0;
+        for (unsigned long long j = j0; j < j1; ++j)
         {
-            float y_local = 0;
-            for (unsigned long long j = j0; j < j1; ++j)
-            {
-                y_local += float(x[j + N * tokenlength]) * ((w[j * w_stride + k + offset * N * M] * r[j + offset * N] + o[j + offset * N]));
-            }
-            atomicAdd(reinterpret_cast<float *>(&y[k + N * tokenlength]), *reinterpret_cast<float *>(&y_local));
+            y_local += float(x[j]) * ((w[j * w_stride + k + offset * N * M] * r[j + offset * N] + o[j + offset * N]));
         }
+        atomicAdd(reinterpret_cast<float *>(&y[k]), *reinterpret_cast<float *>(&y_local));
     }
 }
 
@@ -312,13 +302,29 @@ void cudac_mm8_one(unsigned long long N, unsigned long long M,
                    float *y,
                    float *r,
                    float *o,
-                   unsigned long long offset,
-                     unsigned long long tokenlength = 1)
+                   unsigned long long offset)
 {
     dim3 blockSize(1, MM8_ONE_TILE);
     dim3 gridSize(MM8_ONE_JSPLIT, (M + blockSize.y - 1) / blockSize.y);
     kernelc_mm8_one<<<gridSize, blockSize>>>(
-        N, M, x, w, w_stride, y, r, o, offset, tokenlength);
+        N, M, x, w, w_stride, y, r, o, offset);
+}
+
+__global__ void addx(
+    const unsigned long long emb,
+    double *__restrict__ const a,
+    double *__restrict__ const b)
+{
+    unsigned long long ii = blockIdx.x * (blockDim.x * EMBBLOCK);
+    for (unsigned long long c = 0; c < EMBBLOCK; c++)
+    {
+        unsigned long long i = ii + threadIdx.x * EMBBLOCK + c;
+
+        if (i < emb)
+        {
+            b[i] += double(a[i]);
+        }
+    }
 }
 
 __global__ void mixffn(
@@ -328,36 +334,19 @@ __global__ void mixffn(
     double *__restrict__ const mixk,
     double *__restrict__ const mixr,
     double *__restrict__ const outk,
-    double *__restrict__ const outr, unsigned long long offset,
-    unsigned long long layers,
-    unsigned long long tokenlength = 1,
-    MODE mode = PARRALEL
+    double *__restrict__ const outr, unsigned long long offset
 
 )
 {
+    unsigned long long ii = blockIdx.x * (blockDim.x * EMBBLOCK);
+    for (unsigned long long c = 0; c < EMBBLOCK; c++)
+    {
+        unsigned long long i = ii + threadIdx.x * EMBBLOCK + c;
 
-    for(unsigned long long token = 0; token < tokenlength; token ++){
-
-    
-        unsigned long long ii = blockIdx.x * (blockDim.x * EMBBLOCK);
-        for (unsigned long long c = 0; c < EMBBLOCK; c++)
+        if (i < emb)
         {
-            unsigned long long i = ii + threadIdx.x * EMBBLOCK + c;
-
-            unsigned long long stateoffset = i + offset * emb;
-
-            if(mode == PARRALEL){
-                stateoffset = i + offset * emb + token * emb * layers;
-            }
-
-            if (i < emb)
-            {
-                outk[i+token*emb] = mixk[i + offset * emb] * rc[i+token*emb] + (1.0 - mixk[i + offset * emb]) * ddd[stateoffset];
-                outr[i+token*emb] = mixr[i + offset * emb] * rc[i+token*emb] + (1.0 - mixr[i + offset * emb]) * ddd[stateoffset];
-
-                ddd[stateoffset] = rc[i+token*emb];
-
-            }
+            outk[i] = mixk[i + offset * emb] * rc[i] + (1.0 - mixk[i + offset * emb]) * ddd[i + offset * emb];
+            outr[i] = mixr[i + offset * emb] * rc[i] + (1.0 - mixr[i + offset * emb]) * ddd[i + offset * emb];
         }
     }
 }
@@ -505,28 +494,28 @@ void setState(unsigned long long n_embed, unsigned long long n_layers,
 
 
 void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, unsigned long long *token, double *x,
-               float *embed, double *layernorms,
-               double *statexy, double *stateaa, double *statebb, double *statepp, double *statedd,
-               double *buffer1, float *buffer2, float *buffer3, float *buffer4,
-               double *mixk, double *mixv, double *mixr,
-               uint8_t *km, uint8_t *vm, uint8_t *rm,
-               float *kr, float *vr, float *rr,
-               float *o1, float *o2, float *o3,
-               uint8_t *attout, float *attoutr, float *attouto,
-               double *ffnmixk, double *ffnmixv,
-               uint8_t *ffnk, uint8_t *ffnv, uint8_t *ffnr,
-               float *ffnkr, float *ffnvr, float *ffnrr,
-               float *ffnko, float *ffnvo, float *ffnro,
-               double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
-               double *decay, double *bonus,
-               uint8_t *head, float *headr, float *heado, 
-               unsigned long long tokenlength = 1, MODE mode = PARRALEL)
+    float *embed, double *layernorms,
+    double *statexy, double *stateaa, double *statebb, double *statepp, double *statedd,
+    double *buffer1, float *buffer2, float *buffer3, float *buffer4,
+    double *mixk, double *mixv, double *mixr,
+    uint8_t *km, uint8_t *vm, uint8_t *rm,
+    float *kr, float *vr, float *rr,
+    float *o1, float *o2, float *o3,
+    uint8_t *attout, float *attoutr, float *attouto,
+    double *ffnmixk, double *ffnmixv,
+    uint8_t *ffnk, uint8_t *ffnv, uint8_t *ffnr,
+    float *ffnkr, float *ffnvr, float *ffnrr,
+    float *ffnko, float *ffnvo, float *ffnro,
+    double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
+    double *decay, double *bonus,
+    uint8_t *head, float *headr, float *heado, 
+    unsigned long long tokenlength = 1, MODE mode = PARRALEL)
 {
    
-    // copy the embedding table to the gpu buffer3, using token as the index
-    for(unsigned long long i = 0; i < tokenlength; i++){
-        cudaMemcpy(&buffer3[i * n_emb], &embed[token[i] * n_emb], n_emb * sizeof(float), cudaMemcpyHostToDevice);
-    }
+        // copy the embedding table to the gpu buffer3, using token as the index
+        for(unsigned long long i = 0; i < tokenlength; i++){
+            cudaMemcpy(&buffer3[i * n_emb], &embed[token[i] * n_emb], n_emb * sizeof(float), cudaMemcpyHostToDevice);
+        }
     
     // copy buffer3 to buffer1
     setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer3, buffer1);
@@ -555,28 +544,29 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
         cuda_wkvc_forward(n_emb, decay, bonus, buffer2, buffer3, buffer4, buffer1, stateaa, statebb, statepp, i, n_layers, tokenlength);
 
         // buffer1 = rwkv
-        setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, x, buffer2);
+        setx<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, buffer2);
         cudac_mm8_one(n_emb, n_emb, buffer1, attout, n_emb, buffer2, attoutr, attouto, i);
         // buffer2 = attout(rwkv) + x
-        setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, x);
+        setx<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer2, x);
         float *zzmean;
         float *zzvariance;
         std::tie(zzmean, zzvariance) = meanvar(n_emb, x, ffnrbuffer, tokenlength);
         cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (i + 1), zzmean, zzvariance, buffer1, tokenlength);
         // buffer1 = ln(x)
         // ffnmixk, ffnmixv = mix(buffer1, statedd[n_emb*y], ffnmixkvr)
-        mixffn<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, statedd, ffnmixk, ffnmixv, ffnkbuffer, ffnvbuffer, i, n_layers, tokenlength, mode);
+        mixffn<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, statedd, ffnmixk, ffnmixv, ffnkbuffer, ffnvbuffer, i);
+        setx<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, statedd, i);
         // ffnkbuffer, ffnvbuffer = mixk, mixv
-        cuda_memset<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, 0);
-        cudac_mm8_one(n_emb, n_emb, ffnvbuffer, ffnr, n_emb, buffer2, ffnrr, ffnro, i, tokenlength);
-        sigmoid<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer2, buffer4, ffnrbuffer, tokenlength);
+        cuda_memset<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer2, 0);
+        cudac_mm8_one(n_emb, n_emb, ffnvbuffer, ffnr, n_emb, buffer2, ffnrr, ffnro, i);
+        sigmoid<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer2, buffer4, ffnrbuffer);
         // ffnvbuffer = sigmoid(ffnrbuffer @ ffnr)
-        cudac_mm8_one(n_emb, n_emb * 4, ffnkbuffer, ffnk, n_emb * 4, ffnrbuffer, ffnkr, ffnko, i, tokenlength);
+        cudac_mm8_one(n_emb, n_emb * 4, ffnkbuffer, ffnk, n_emb * 4, ffnrbuffer, ffnkr, ffnko, i);
         // ffnrbuffer = ffnkbuffer @ ffnk
-        cuda_relusquared<<<(tokenlength * n_emb * 4 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*n_emb * 4, ffnrbuffer, buffer3);
-        cudac_mm8_one(n_emb * 4, n_emb, ffnrbuffer, ffnv, n_emb, buffer3, ffnvr, ffnvo, i, tokenlength);
+        cuda_relusquared<<<(n_emb * 4 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb * 4, ffnrbuffer, buffer3);
+        cudac_mm8_one(n_emb * 4, n_emb, ffnrbuffer, ffnv, n_emb, buffer3, ffnvr, ffnvo, i);
         // buffer3 = ffnrbuffer @ ffnv
-        blockout<<<(tokenlength*n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*n_emb, x, buffer3, buffer4);
+        blockout<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, buffer3, buffer4);
 
         // cuda_layernorm<<<1,1>>>(n_emb, x, layernorms,4*(i)+4, buffer1);
         // setx<<<1,1>>>(n_emb, buffer1, x);
@@ -587,16 +577,8 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
     std::tie(mean, variance) = meanvar(n_emb, x, ffnrbuffer, tokenlength);
     cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (n_layers) + 2, mean, variance, buffer1, tokenlength);
     
-    unsigned long long outputLength = 1;
-    unsigned long long outputOffset = tokenlength - 1;
-
-    if(mode == PARRALEL){
-        outputLength = tokenlength;
-        outputOffset = 0;
-    }
-    
-    cuda_memset<<<(outputLength*50277 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(outputLength*50277, buffer2, 0);
-    cudac_mm8_one(n_emb, 50277, &buffer1[n_emb*(outputOffset)], head, 50277, buffer2, headr, heado, 0, outputLength);
+    cuda_memset<<<(50277 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(50277, buffer2, 0);
+    cudac_mm8_one(n_emb, 50277, buffer1, head, 50277, buffer2, headr, heado, 0);
     cudaDeviceSynchronize();
 
     
