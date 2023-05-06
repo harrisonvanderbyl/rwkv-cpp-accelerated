@@ -4,55 +4,8 @@
 #include <string>
 #include <iostream>
 #include <tuple>
-enum
-{
-    X,
-    EMBED,
-    LAYERNORMS,
-    STATEXY,
-    STATEAA,
-    STATEBB,
-    STATEPP,
-    STATEDD,
-    BUFFER1,
-    BUFFER2,
-    BUFFER3,
-    BUFFER4,
-    MIXK,
-    MIXV,
-    MIXR,
-    KM,
-    VM,
-    RM,
-    KR,
-    VR,
-    RR,
-    O1,
-    O2,
-    O3,
-    ATTOUT,
-    ATTOUTR,
-    ATTOUTO,
-    FFNMIXK,
-    FFNMIXV,
-    FFNK,
-    FFNV,
-    FFNR,
-    FFNKR,
-    FFNVR,
-    FFNRR,
-    FFNKO,
-    FFNVO,
-    FFNRO,
-    FFNKBUFFER,
-    FFNVBUFFER,
-    FFNRBUFFER,
-    DECAY,
-    BONUS,
-    HEAD,
-    HEADR,
-    HEADO
-};
+#include "rwkv/enums/enum.h"
+
 std::string names[46] = {
     "xbuf",
     "embed",
@@ -144,6 +97,26 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
                double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
                double *decay, double *bonus,
                uint8_t *head, float *headr, float *heado);
+
+void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long *n_emb, unsigned long long *token, double *x,
+               float *embed, double *layernorms,
+               double *statexy, double *stateaa, double *statebb, double *statepp, double *statedd,
+               double *buffer1, float *buffer2, float *buffer3, float *buffer4,
+               double *mixk, double *mixv, double *mixr,
+               uint8_t *km, uint8_t *vm, uint8_t *rm,
+               float *kr, float *vr, float *rr,
+               float *o1, float *o2, float *o3,
+               uint8_t *attout, float *attoutr, float *attouto,
+               double *ffnmixk, double *ffnmixv,
+               uint8_t *ffnk, uint8_t *ffnv, uint8_t *ffnr,
+               float *ffnkr, float *ffnvr, float *ffnrr,
+               float *ffnko, float *ffnvo, float *ffnro,
+               double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
+               double *decay, double *bonus,
+               uint8_t *head, float *headr, float *heado,
+               unsigned long long tokenlength, 
+               MODE mode
+               );
 
 unsigned long long getSize(unsigned long long i, unsigned long long a, unsigned long long b)
 {
