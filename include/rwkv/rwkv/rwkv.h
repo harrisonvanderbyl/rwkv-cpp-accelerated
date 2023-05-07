@@ -5,6 +5,7 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
+#include "rwkv/tokenizer/tokenizer.h"
 #include "rwkv/enums/enum.h"
 
 std::string names[46] = {
@@ -56,6 +57,8 @@ std::string names[46] = {
     "head_o"};
 
 // cuda hooks
+
+
 
 // load from file
 std::tuple<unsigned long long, unsigned long long> load(const std::string &filename, int **ptrs, unsigned long long maxGPT);
@@ -135,6 +138,110 @@ const char *getName(unsigned long long i)
     return names[i].c_str();
 }
 
+class RWKVState
+{
+    public:
+    double *statexy;
+    double *stateaa;
+    double *statebb;
+    double *statepp;
+    double *statedd;
+    unsigned long long num_layers;
+    unsigned long long num_embed;
+    unsigned long long stateSize;
+
+    RWKVState(unsigned long long num_layers, unsigned long long num_embed, unsigned long long stateSize)
+    {
+        this->num_layers = num_layers;
+        this->num_embed = num_embed;
+        this->stateSize = stateSize;
+        statexy = new double[num_layers * num_embed * stateSize];
+        stateaa = new double[num_layers * num_embed * stateSize];
+        statebb = new double[num_layers * num_embed * stateSize];
+        statepp = new double[num_layers * num_embed * stateSize];
+        statedd = new double[num_layers * num_embed * stateSize];
+
+        for (unsigned long long i = 0; i < num_layers * num_embed * stateSize; i++)
+        {
+            statexy[i] = 0;
+            stateaa[i] = 0;
+            statebb[i] = 0;
+            statepp[i] = 0;
+            statedd[i] = 0;
+        }
+    }
+
+    RWKVState(RWKVState &other){
+        this->num_layers = other.num_layers;
+        this->num_embed = other.num_embed;
+        this->stateSize = other.stateSize;
+        statexy = new double[num_layers * num_embed * stateSize];
+        stateaa = new double[num_layers * num_embed * stateSize];
+        statebb = new double[num_layers * num_embed * stateSize];
+        statepp = new double[num_layers * num_embed * stateSize];
+        statedd = new double[num_layers * num_embed * stateSize];
+
+        for (unsigned long long i = 0; i < num_layers * num_embed * stateSize; i++)
+        {
+            statexy[i] = other.statexy[i];
+            stateaa[i] = other.stateaa[i];
+            statebb[i] = other.statebb[i];
+            statepp[i] = other.statepp[i];
+            statedd[i] = other.statedd[i];
+        }
+    }
+
+    RWKVState(RWKVState &other, unsigned long long offset){
+        this->num_layers = other.num_layers;
+        this->num_embed = other.num_embed;
+        this->stateSize = 1;
+        statexy = new double[num_layers * num_embed * stateSize];
+        stateaa = new double[num_layers * num_embed * stateSize];
+        statebb = new double[num_layers * num_embed * stateSize];
+        statepp = new double[num_layers * num_embed * stateSize];
+        statedd = new double[num_layers * num_embed * stateSize];
+
+        for (unsigned long long i = 0; i < num_layers * num_embed * stateSize; i++)
+        {
+            statexy[i] = other.statexy[i + offset];
+            stateaa[i] = other.stateaa[i + offset];
+            statebb[i] = other.statebb[i + offset];
+            statepp[i] = other.statepp[i + offset];
+            statedd[i] = other.statedd[i + offset];
+        }
+    }
+
+    ~RWKVState()
+    {
+        delete[] statexy;
+        delete[] stateaa;
+        delete[] statebb;
+        delete[] statepp;
+        delete[] statedd;
+    }
+
+    // Get a substate
+    RWKVState getSubState(unsigned long long offset = 0){
+        if (offset >= stateSize){
+            throw std::runtime_error("State get offset out of bounds, max offset is " + std::to_string(stateSize));
+        }
+        return RWKVState(*this, offset);
+    }
+
+    // Set a substate
+    void setSubState(RWKVState &other, unsigned long long offset = 0){
+        for (unsigned long long i = 0; i < num_layers * num_embed; i++)
+        {
+            statexy[i + offset * num_layers * num_embed] = other.statexy[i];
+            stateaa[i + offset * num_layers * num_embed] = other.stateaa[i];
+            statebb[i + offset * num_layers * num_embed] = other.statebb[i];
+            statepp[i + offset * num_layers * num_embed] = other.statepp[i];
+            statedd[i + offset * num_layers * num_embed] = other.statedd[i];
+        }
+    }
+
+};
+
 class RWKV
 {
 public:
@@ -153,11 +260,9 @@ public:
     unsigned long long maxContext = 1;
 
     // Cpu state tensors
-    double *statexy;
-    double *stateaa;
-    double *statebb;
-    double *statepp;
-    double *statedd;
+    RWKVState *state;
+
+    GPT2Tokenizer *tokenizer;
 
     bool ready = false;
 
@@ -174,20 +279,9 @@ public:
         }
 
         std::tie(num_layers, num_embed) = load(filename, tensors, maxGPT);
-        statexy = new double[num_layers * num_embed * maxGPT];
-        stateaa = new double[num_layers * num_embed * maxGPT];
-        statebb = new double[num_layers * num_embed * maxGPT];
-        statepp = new double[num_layers * num_embed * maxGPT];
-        statedd = new double[num_layers * num_embed * maxGPT];
+        state = new RWKVState(num_layers, num_embed, maxGPT);
         out = new float[50277 * maxGPT];
-        for (unsigned long long i = 0; i < num_layers * num_embed * maxGPT; i++)
-        {
-            statexy[i] = 0;
-            stateaa[i] = 0;
-            statebb[i] = 0;
-            statepp[i] = 0;
-            statedd[i] = 0;
-        }
+        
         for (unsigned long long i = 0; i < 50277 * maxGPT; i++)
         {
             out[i] = 0;
@@ -199,6 +293,16 @@ public:
 
         ready = true;
     };
+
+    void loadTokenizer(std::string vocabPath){
+        auto _tokenizer = GPT2Tokenizer::load(vocabPath+"/vocab.json", vocabPath+"/merges.txt");
+        if (!_tokenizer.has_value()) {
+            std::cerr << "Failed to load tokenizer" << std::endl;
+            return;
+        };
+        tokenizer = new GPT2Tokenizer(_tokenizer.value());
+    }
+
 
     
 
@@ -214,6 +318,9 @@ public:
         return types[i];
     };
 
+    
+
+
     float *forward(std::vector<unsigned long long> token, MODE mode)
     {
         
@@ -222,8 +329,13 @@ public:
             throw std::runtime_error("RWKV not loaded");
         }
 
+        if (token.size() > maxContext)
+        {
+            throw std::runtime_error("Context too large, max context is " + std::to_string(maxContext));
+        }
+
         // copy the state into the gpu
-        setState(num_layers, num_embed, (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]), statexy, stateaa, statebb, statepp, statedd, token.size());
+        setState(num_layers, num_embed, (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]), state->statexy, state->stateaa, state->statebb, state->statepp, state->statedd, token.size());
 
         cuda_rwkv_parralel(num_layers, num_embed, token.data(), (double *)(tensors[X]),
                   (float *)(tensors[EMBED]), (double *)(tensors[LAYERNORMS]),
@@ -243,13 +355,46 @@ public:
                   (uint8_t *)(tensors[HEAD]), (float *)(tensors[HEADR]), (float *)(tensors[HEADO]), token.size(), mode);
 
         getOutput(num_layers, num_embed, (float *)(tensors[BUFFER2]), (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]),
-                  out, statexy, stateaa, statebb, statepp, statedd, token.size());
+                  out, state->statexy, state->stateaa, state->statebb, state->statepp, state->statedd, token.size());
 
         return out;
     }
 
     float* forward(unsigned long long token){
         return forward(std::vector<unsigned long long>{token}, GPT);
+    }
+
+    float *forward(std::vector<long long> token, MODE mode){
+        std::vector<unsigned long long> token2;
+        for(long long i : token){
+            token2.push_back(i);
+        }
+        return forward(token2, mode);
+    }
+
+    RWKVState emptyState(){
+        // This is simultaniously the most fucked and the most useful thing
+        return {num_layers, num_embed, 1};
+    }
+
+    long long loadContext(std::string input, bool progress = false){
+        std::vector<long long> initial = tokenizer->encode(input);auto tokens = tokenizer->encode(input);
+        for(int i = 0; i < initial.size(); i+=maxContext)
+        {
+            
+            // load initial as .subvector(i -> i+maxContext)
+            auto mvec = std::vector<unsigned long long>(initial.begin()+i, initial.begin()+(std::min((size_t)(i+maxContext), initial.size())));
+            std::cout << mvec.size() << std::endl;
+            forward(mvec, GPT);
+            // delete last progress
+            if(progress){
+                std::cout << "\r";
+                std::cout << int(float(i)/initial.size()*100) << "%";
+                std::flush(std::cout);
+            }
+        }
+
+        return initial[initial.size()-1];
     }
 
     // destructor
@@ -264,11 +409,7 @@ public:
 
         freeTensors(tensors);
         delete[] tensors;
-        delete[] statexy;
-        delete[] stateaa;
-        delete[] statebb;
-        delete[] statepp;
-        delete[] statedd;
+        delete state;
     };
 };
 
