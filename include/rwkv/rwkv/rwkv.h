@@ -266,6 +266,13 @@ public:
 
     bool ready = false;
 
+    // Compatibility
+    double* statexy;
+    double* stateaa;
+    double* statebb;
+    double* statepp;
+    double* statedd;
+
     RWKV(){
 
     };
@@ -280,6 +287,14 @@ public:
 
         std::tie(num_layers, num_embed) = load(filename, tensors, maxGPT);
         state = new RWKVState(num_layers, num_embed, maxGPT);
+
+        // Deprecated, compatibility layer
+        statexy = state->statexy;
+        stateaa = state->stateaa;
+        statebb = state->statebb;
+        statepp = state->statepp;
+        statedd = state->statedd;
+
         out = new float[50277 * maxGPT];
         
         for (unsigned long long i = 0; i < 50277 * maxGPT; i++)
