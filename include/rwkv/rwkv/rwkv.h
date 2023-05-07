@@ -399,7 +399,6 @@ public:
             
             // load initial as .subvector(i -> i+maxContext)
             auto mvec = std::vector<unsigned long long>(initial.begin()+i, initial.begin()+(std::min((size_t)(i+maxContext), initial.size())));
-            std::cout << mvec.size() << std::endl;
             forward(mvec, GPT);
             // delete last progress
             if(progress){
