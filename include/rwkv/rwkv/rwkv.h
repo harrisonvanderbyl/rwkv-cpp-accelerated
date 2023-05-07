@@ -4,55 +4,9 @@
 #include <string>
 #include <iostream>
 #include <tuple>
-enum
-{
-    X,
-    EMBED,
-    LAYERNORMS,
-    STATEXY,
-    STATEAA,
-    STATEBB,
-    STATEPP,
-    STATEDD,
-    BUFFER1,
-    BUFFER2,
-    BUFFER3,
-    BUFFER4,
-    MIXK,
-    MIXV,
-    MIXR,
-    KM,
-    VM,
-    RM,
-    KR,
-    VR,
-    RR,
-    O1,
-    O2,
-    O3,
-    ATTOUT,
-    ATTOUTR,
-    ATTOUTO,
-    FFNMIXK,
-    FFNMIXV,
-    FFNK,
-    FFNV,
-    FFNR,
-    FFNKR,
-    FFNVR,
-    FFNRR,
-    FFNKO,
-    FFNVO,
-    FFNRO,
-    FFNKBUFFER,
-    FFNVBUFFER,
-    FFNRBUFFER,
-    DECAY,
-    BONUS,
-    HEAD,
-    HEADR,
-    HEADO
-};
+#include <vector>
+#include "rwkv/enums/enum.h"
+
 std::string names[46] = {
     "xbuf",
     "embed",
@@ -104,19 +58,19 @@ std::string names[46] = {
 // cuda hooks
 
 // load from file
-std::tuple<unsigned long long, unsigned long long> load(const std::string &filename, int **ptrs);
+std::tuple<unsigned long long, unsigned long long> load(const std::string &filename, int **ptrs, unsigned long long maxGPT);
 void setState(unsigned long long n_embed, unsigned long long n_layers,
               double *stateaa, double *statebb, double *statecc, double *statedd, double *stateee,
-              double *instateaa, double *instatebb, double *instatecc, double *instatedd, double *instateee);
+              double *instateaa, double *instatebb, double *instatecc, double *instatedd, double *instateee, unsigned long long tokenlength);
 
 // copy the state into the gpu
 void setState(unsigned long long n_embed, unsigned long long n_layers,
               double *stateaa, double *statebb, double *statecc, double *statedd, double *stateee,
-              double *instateaa, double *instatebb, double *instatecc, double *instatedd, double *instateee);
+              double *instateaa, double *instatebb, double *instatecc, double *instatedd, double *instateee, unsigned long long tokenlength);
 
 // copy the logits to the output
 void getOutput(unsigned long long n_embed, unsigned long long n_layers, float *logitsin, double *statexyin, double *stateaain, double *statebbin, double *stateppin, double *stateddin,
-               float *logitsout, double *statexyout, double *stateaaout, double *statebbout, double *stateppout, double *stateddout);
+               float *logitsout, double *statexyout, double *stateaaout, double *statebbout, double *stateppout, double *stateddout, unsigned long long tokenlength);
 
 void freeTensors(int **ptrs);
 
@@ -144,6 +98,26 @@ void cuda_rwkv(unsigned long long n_layers, unsigned long long n_emb, unsigned l
                double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
                double *decay, double *bonus,
                uint8_t *head, float *headr, float *heado);
+
+void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, unsigned long long *token, double *x,
+               float *embed, double *layernorms,
+               double *statexy, double *stateaa, double *statebb, double *statepp, double *statedd,
+               double *buffer1, float *buffer2, float *buffer3, float *buffer4,
+               double *mixk, double *mixv, double *mixr,
+               uint8_t *km, uint8_t *vm, uint8_t *rm,
+               float *kr, float *vr, float *rr,
+               float *o1, float *o2, float *o3,
+               uint8_t *attout, float *attoutr, float *attouto,
+               double *ffnmixk, double *ffnmixv,
+               uint8_t *ffnk, uint8_t *ffnv, uint8_t *ffnr,
+               float *ffnkr, float *ffnvr, float *ffnrr,
+               float *ffnko, float *ffnvo, float *ffnro,
+               double *ffnkbuffer, double *ffnvbuffer, float *ffnrbuffer,
+               double *decay, double *bonus,
+               uint8_t *head, float *headr, float *heado,
+               unsigned long long tokenlength, 
+               MODE mode
+               );
 
 unsigned long long getSize(unsigned long long i, unsigned long long a, unsigned long long b)
 {
@@ -174,7 +148,9 @@ public:
     unsigned long long num_embed = 0;
 
     // Cpu tensor for reading logits
-    float *out = new float[50277];
+    float *out;
+
+    unsigned long long maxContext = 1;
 
     // Cpu state tensors
     double *statexy;
@@ -190,20 +166,21 @@ public:
     };
 
     // Load from .bin file
-    void loadFile(const std::string &filename)
+    void loadFile(const std::string &filename, unsigned long long maxGPT = 1)
     {
         if (ready)
         {
             throw std::runtime_error("RWKV already loaded");
         }
 
-        std::tie(num_layers, num_embed) = load(filename, tensors);
-        statexy = new double[num_layers * num_embed];
-        stateaa = new double[num_layers * num_embed];
-        statebb = new double[num_layers * num_embed];
-        statepp = new double[num_layers * num_embed];
-        statedd = new double[num_layers * num_embed];
-        for (unsigned long long i = 0; i < num_layers * num_embed; i++)
+        std::tie(num_layers, num_embed) = load(filename, tensors, maxGPT);
+        statexy = new double[num_layers * num_embed * maxGPT];
+        stateaa = new double[num_layers * num_embed * maxGPT];
+        statebb = new double[num_layers * num_embed * maxGPT];
+        statepp = new double[num_layers * num_embed * maxGPT];
+        statedd = new double[num_layers * num_embed * maxGPT];
+        out = new float[50277 * maxGPT];
+        for (unsigned long long i = 0; i < num_layers * num_embed * maxGPT; i++)
         {
             statexy[i] = 0;
             stateaa[i] = 0;
@@ -211,13 +188,19 @@ public:
             statepp[i] = 0;
             statedd[i] = 0;
         }
-        for (unsigned long long i = 0; i < 50277; i++)
+        for (unsigned long long i = 0; i < 50277 * maxGPT; i++)
         {
             out[i] = 0;
         }
 
+
+
+        maxContext = maxGPT;
+
         ready = true;
     };
+
+    
 
     // Get number of elements in a tensor
     unsigned long long getTensorSize(unsigned long long i)
@@ -231,18 +214,18 @@ public:
         return types[i];
     };
 
-    float *forward(unsigned long long token)
+    float *forward(std::vector<unsigned long long> token, MODE mode)
     {
-
+        
         if (!ready)
         {
             throw std::runtime_error("RWKV not loaded");
         }
 
         // copy the state into the gpu
-        setState(num_layers, num_embed, (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]), statexy, stateaa, statebb, statepp, statedd);
+        setState(num_layers, num_embed, (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]), statexy, stateaa, statebb, statepp, statedd, token.size());
 
-        cuda_rwkv(num_layers, num_embed, token, (double *)(tensors[X]),
+        cuda_rwkv_parralel(num_layers, num_embed, token.data(), (double *)(tensors[X]),
                   (float *)(tensors[EMBED]), (double *)(tensors[LAYERNORMS]),
                   (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]),
                   (double *)(tensors[BUFFER1]), (float *)(tensors[BUFFER2]), (float *)(tensors[BUFFER3]), (float *)(tensors[BUFFER4]),
@@ -257,12 +240,16 @@ public:
                   (float *)(tensors[FFNKO]), (float *)(tensors[FFNVO]), (float *)(tensors[FFNRO]),
                   (double *)(tensors[FFNKBUFFER]), (double *)(tensors[FFNVBUFFER]), (float *)(tensors[FFNRBUFFER]),
                   (double *)(tensors[DECAY]), (double *)(tensors[BONUS]),
-                  (uint8_t *)(tensors[HEAD]), (float *)(tensors[HEADR]), (float *)(tensors[HEADO]));
+                  (uint8_t *)(tensors[HEAD]), (float *)(tensors[HEADR]), (float *)(tensors[HEADO]), token.size(), mode);
 
         getOutput(num_layers, num_embed, (float *)(tensors[BUFFER2]), (double *)(tensors[STATEXY]), (double *)(tensors[STATEAA]), (double *)(tensors[STATEBB]), (double *)(tensors[STATEPP]), (double *)(tensors[STATEDD]),
-                  out, statexy, stateaa, statebb, statepp, statedd);
+                  out, statexy, stateaa, statebb, statepp, statedd, token.size());
 
         return out;
+    }
+
+    float* forward(unsigned long long token){
+        return forward(std::vector<unsigned long long>{token}, GPT);
     }
 
     // destructor

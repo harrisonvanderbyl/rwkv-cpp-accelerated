@@ -11,7 +11,14 @@ int main(){
         return 1;
     };
     GPT2Tokenizer tokenizer = tokenizerop.value();
-    std::vector<long long> initial = tokenizer.encode(initPrompt);
+    std::vector<long long> initiala = tokenizer.encode(initPrompt);
+    // convert to long long unsigned int without loss of data
+    std::vector<unsigned long long> initial = std::vector<unsigned long long>{};
+    for(int i = 0; i < initiala.size(); i++)
+    {
+        initial.push_back((unsigned long long)initiala[i]);
+    }
+    
     RWKV Rwkv = RWKV();
 
     // tokenizer;
@@ -24,14 +31,18 @@ int main(){
         std::cerr << "No model file found. Please convert a PyTorch model first.\n Use https://github.com/harrisonvanderbyl/rwkv-cpp-cuda exporter to create a model.bin file and move it next to here" << std::endl;
         return 1;
     }
-    Rwkv.loadFile(current + "/model.bin");
+    Rwkv.loadFile(current + "/model.bin",2);
     std::cout << "Loaded model" << std::endl;
     int lasttoken = initial[initial.size()-1]; 
     std::cout << "loading context" << std::endl << std::endl;
-    for(int i = 0; i < initial.size(); i++)
+    for(int i = 0; i < initial.size(); i+=Rwkv.maxContext)
     {
-        // load initial
-        Rwkv.forward(initial[i]);
+        // load initial as .subvector(i -> i+maxContext)
+        auto mvec = std::vector<unsigned long long>(initial.begin()+i, initial.begin()+(std::min((size_t)(i+Rwkv.maxContext), initial.size())));
+        std::cout << mvec.size() << std::endl;
+        Rwkv.forward(mvec, GPT);
+        std::cout << Rwkv.out[0] << std::endl;
+        std::cout << Rwkv.out[50277] << std::endl;
         // delete last progress
         std::cout << "\r";
         std::cout << int(float(i)/initial.size()*100) << "%";
@@ -39,12 +50,12 @@ int main(){
 
     }
     // create double* of length [Rwkv.num_layers*Rwkv.num_embed]
-    double* xy = new double[Rwkv.num_layers*Rwkv.num_embed];
-    double* aa = new double[Rwkv.num_layers*Rwkv.num_embed];
-    double* bb = new double[Rwkv.num_layers*Rwkv.num_embed];
-    double* pp = new double[Rwkv.num_layers*Rwkv.num_embed];
-    double* dd = new double[Rwkv.num_layers*Rwkv.num_embed];
-    for(int i = 0; i < Rwkv.num_layers*Rwkv.num_embed; i++)
+    double* xy = new double[Rwkv.num_layers*Rwkv.num_embed * Rwkv.maxContext];
+    double* aa = new double[Rwkv.num_layers*Rwkv.num_embed * Rwkv.maxContext];
+    double* bb = new double[Rwkv.num_layers*Rwkv.num_embed  * Rwkv.maxContext];
+    double* pp = new double[Rwkv.num_layers*Rwkv.num_embed * Rwkv.maxContext];
+    double* dd = new double[Rwkv.num_layers*Rwkv.num_embed * Rwkv.maxContext];
+    for(int i = 0; i < Rwkv.num_layers*Rwkv.num_embed *Rwkv.maxContext; i++)
     {
         xy[i] = Rwkv.statexy[i];
         aa[i] = Rwkv.stateaa[i];
@@ -76,7 +87,7 @@ int main(){
             exit = false;
          
 
-            for (int i = 0; i < Rwkv.num_layers*Rwkv.num_embed; i++)
+            for (int i = 0; i < Rwkv.num_layers*Rwkv.num_embed *Rwkv.maxContext; i++)
             {
                 Rwkv.statexy[i] = xy[i];
                 Rwkv.stateaa[i] = aa[i];
