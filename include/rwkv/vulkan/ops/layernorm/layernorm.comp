@@ -1,0 +1,47 @@
+
+
+#version 450 core
+
+layout( local_size_x_id = 0 ) in;
+
+// const 
+// size of vector defined by a specialization constant
+layout( constant_id = 1 ) const uint N = 1;
+layout( constant_id = 2 ) const uint offset = 1;
+layout( constant_id = 3 ) const uint tokens = 1;
+
+layout(set = 0, binding = 0) buffer X
+{
+    double x[];
+};
+
+layout(set = 0, binding = 1) buffer INWEIGHT
+{
+    double weight[];
+};
+
+layout(set = 0, binding = 2) buffer INMEAN { float inmean[];};
+
+layout(set = 0, binding = 3) buffer OUTBUF
+{
+    double outbuf[];
+};
+
+void main()
+{
+    uint i = gl_GlobalInvocationID.x;
+    
+
+    if (i < N)
+    {
+        for(uint token = 0; token < tokens; token++){
+            double xmean = double(inmean[token]) / N;
+            double x2 = sqrt(inmean[tokens+token] / (N - 1));
+
+            outbuf[i+N*token] = weight[offset*N + N * 0 + i] * ((x[i + N*token] - xmean) / x2) + weight[offset*N + N * 1 + i];
+        }
+    }
+}
+
+
+
