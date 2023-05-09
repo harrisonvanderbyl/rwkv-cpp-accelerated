@@ -394,9 +394,10 @@ public:
 
     long long loadContext(std::string input, bool progress = false){
         std::vector<long long> initial = tokenizer->encode(input);auto tokens = tokenizer->encode(input);
+        std::cout << initial[0] << ":token";
         for(int i = 0; i < initial.size(); i+=maxContext)
         {
-            
+        
             // load initial as .subvector(i -> i+maxContext)
             auto mvec = std::vector<unsigned long long>(initial.begin()+i, initial.begin()+(std::min((size_t)(i+maxContext), initial.size())));
             forward(mvec, GPT);

@@ -22,7 +22,7 @@ int main(){
         return 1;
     }
 
-    Rwkv.loadFile(current + "/model.bin",2);
+    Rwkv.loadFile(current + "/model.bin",1);
     
     std::cout << "Loaded model" << std::endl;
     std::cout << "loading context" << std::endl << std::endl;

@@ -1,0 +1,47 @@
+// __global__ void mixatt(
+
+// )
+#version 450 core
+layout( local_size_x_id = 0 ) in;
+//
+// size of vector defined by a specialization constant
+layout( constant_id = 1 ) const uint emb = 1;
+layout( constant_id = 2 ) const uint tokens = 1;
+layout( constant_id = 3) const uint mode = 1;
+layout( constant_id = 4) const uint layers = 1;
+layout( constant_id = 5) const uint offset = 0; 
+
+layout(set = 0, binding = 0) buffer Rcc { double rc[]; };
+layout(set = 0, binding = 1) buffer Ddd { double ddd[]; };
+layout(set = 0, binding = 2) buffer Mixk { double mixk[]; };
+layout(set = 0, binding = 3) buffer Mixv { double mixv[]; };
+layout(set = 0, binding = 4) buffer Mixr { double mixr[]; };
+layout(set = 0, binding = 5) buffer Outkvr { float outkvr[]; };
+layout(set = 0, binding = 6) buffer A { float a[]; };
+layout(set = 0, binding = 7) buffer B { float b[]; };
+layout(set = 0, binding = 8) buffer Cc { float cc[]; };
+
+void main() {
+    uint i = gl_GlobalInvocationID.x; 
+    for(uint token = 0; token < tokens; token++ ){
+        
+
+            if (i < emb)
+            {
+                uint stateoffset = i + offset * emb;
+
+                if(mode == 0){
+                    stateoffset = i + offset * emb + token * emb * layers;
+                }
+
+                outkvr[i + token*emb*3] = float(mixk[i + offset * emb] * rc[i + token*emb] + (1.0 - mixk[i + offset * emb]) * ddd[stateoffset]);
+                outkvr[i + emb + token*emb*3] = float( mixv[i + offset * emb] * rc[i + token*emb] + (1.0 - mixv[i + offset * emb]) * ddd[stateoffset]);
+                outkvr[i + emb * 2 + token*emb*3] = float( mixr[i + offset * emb] * rc[i + token*emb] + (1.0 - mixr[i + offset * emb]) * ddd[stateoffset]);
+                ddd[stateoffset] = rc[i + token*emb];
+                a[i + token*emb] = 0.0;
+                b[i + token*emb] = 0.0;
+                cc[i + token*emb] = 0.0;
+            }
+        }
+    
+}
