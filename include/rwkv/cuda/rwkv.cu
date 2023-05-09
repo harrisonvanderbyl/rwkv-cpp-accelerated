@@ -1,5 +1,6 @@
 #if !defined(__NVCC__) and defined(__HIPCC__)
 // Allow HIP/amd to compile this file
+
 #include "hip/hip_runtime.h"
 #define cudaMalloc hipMalloc
 #define cudaFree hipFree
@@ -23,7 +24,19 @@
 #define EMBSPLIT 256
 #define EMBBLOCK 16
 
-
+// log either float or double
+template <typename DTYPE>
+void logData(DTYPE* input, int N = 1, std::string logname = "log"){
+    DTYPE * outbuf2;
+    // copy the output back to the host
+    outbuf2 = (DTYPE *)malloc(N * sizeof(DTYPE));
+    cudaMemcpy(outbuf2, input, N * sizeof(DTYPE), cudaMemcpyDeviceToHost);
+    std::cout << logname << std::endl;
+    for (int i = 0; i < N; i++)
+    {
+        std::cout << outbuf2[i] << std::endl;
+    }
+}
 
 __global__ void cuda_layernorm(unsigned long long n_emb, const double *__restrict__ const x, const double *__restrict__ const weight, unsigned long long offset, float *const inmean, float *const instd, double *__restrict__ const out, unsigned long long tokenlength)
 {
@@ -503,13 +516,15 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
     
     // copy buffer3 to buffer1
     setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer3, buffer1);
-
+    
     float *ccmean;
     float *ccvariance;
     std::tie(ccmean, ccvariance) = meanvar(n_emb, buffer1, ffnrbuffer, tokenlength);
-
+    
     cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, layernorms, 0, ccmean, ccvariance, x, tokenlength);
-
+    
+    
+    
     for (unsigned long long i = 0; i < n_layers; i++)
     {
         // xy = ln(x)
@@ -521,36 +536,47 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
 
         cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (i) + 2, camean, cavariance, buffer1, tokenlength);
         // buffers to 0
+        
         mixatt<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, statexy, mixk, mixv, mixr, ffnrbuffer, i, buffer2, buffer3, buffer4,n_layers, tokenlength, mode);
+        
         cuda_mm8_threec(n_emb, ffnrbuffer, km, vm, rm, kr, vr, rr, o1, o2, o3, buffer2, buffer3, buffer4, i, tokenlength);
         // buffer2, 3, 4 = k,v,r
-
+        
         cuda_wkvc_forward(n_emb, decay, bonus, buffer2, buffer3, buffer4, buffer1, stateaa, statebb, statepp, i, n_layers, tokenlength, mode);
-
+        
         // buffer1 = rwkv
         setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, x, buffer2);
+        
         cudac_mm8_one(n_emb, n_emb, buffer1, attout, n_emb, buffer2, attoutr, attouto, i, tokenlength);
+        logData(buffer2,2,"\nattout");
         // buffer2 = attout(rwkv) + x
         setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, x);
+        
         float *zzmean;
         float *zzvariance;
         std::tie(zzmean, zzvariance) = meanvar(n_emb, x, ffnrbuffer, tokenlength);
         cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (i + 1), zzmean, zzvariance, buffer1, tokenlength);
+        
         // buffer1 = ln(x)
         // ffnmixk, ffnmixv = mix(buffer1, statedd[n_emb*y], ffnmixkvr)
         mixffn<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, buffer1, statedd, ffnmixk, ffnmixv, ffnkbuffer, ffnvbuffer, i, n_layers, tokenlength, mode);
         // ffnkbuffer, ffnvbuffer = mixk, mixv
+        // logData(ffnkbuffer,2,"mixk");
+        // logData(ffnvbuffer,2,"mixr");
         cuda_memset<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, 0);
         cudac_mm8_one(n_emb, n_emb, ffnvbuffer, ffnr, n_emb, buffer2, ffnrr, ffnro, i, tokenlength);
         sigmoid<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, buffer4, ffnrbuffer);
         // ffnvbuffer = sigmoid(ffnrbuffer @ ffnr)
         cudac_mm8_one(n_emb, n_emb * 4, ffnkbuffer, ffnk, n_emb * 4, ffnrbuffer, ffnkr, ffnko, i, tokenlength);
+        // logData(ffnrbuffer,2,"ffnr");
         // ffnrbuffer = ffnkbuffer @ ffnk
         cuda_relusquared<<<(tokenlength * n_emb * 4 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*n_emb * 4, ffnrbuffer, buffer3);
         cudac_mm8_one(n_emb * 4, n_emb, ffnrbuffer, ffnv, n_emb, buffer3, ffnvr, ffnvo, i, tokenlength);
+        // logData(buffer3,2,"buffer3");
         // buffer3 = ffnrbuffer @ ffnv
         blockout<<<(tokenlength*n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*n_emb, x, buffer3, buffer4);
 
+       
         
     }
 

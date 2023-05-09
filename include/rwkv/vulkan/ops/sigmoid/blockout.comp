@@ -1,0 +1,30 @@
+#version 450 core
+#extension GL_EXT_shader_atomic_float : require
+//
+// workgroup size defined with specialization constants.
+layout( local_size_x_id = 0 ) in;
+/*layout( local_size_y_id = 1 ) in;
+layout( local_size_z_id = 2 ) in;*/
+
+//
+// size of vector defined by a specialization constant
+layout( constant_id = 1 ) const uint N = 1;
+
+//
+// resources
+//
+
+layout(set = 0, binding = 0) buffer A { double a[]; };
+layout(set = 0, binding = 1) buffer B { float b[]; };
+layout(set = 0, binding = 2) buffer C { float c[]; };
+
+void main(void)
+{
+       
+    uint tid = gl_GlobalInvocationID.x; 
+
+    if(tid < N)
+    {
+        a[tid] = a[tid] + b[tid] * c[tid];
+    }
+}
