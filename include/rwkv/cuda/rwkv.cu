@@ -548,7 +548,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
         setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, x, buffer2);
         
         cudac_mm8_one(n_emb, n_emb, buffer1, attout, n_emb, buffer2, attoutr, attouto, i, tokenlength);
-        logData(buffer2,2,"\nattout");
+        // logData(buffer2,2,"\nattout");
         // buffer2 = attout(rwkv) + x
         setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer2, x);
         
