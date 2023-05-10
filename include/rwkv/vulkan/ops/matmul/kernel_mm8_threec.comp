@@ -6,9 +6,9 @@
 #extension GL_EXT_shader_explicit_arithmetic_types : require
 #extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
 //
-layout(local_size_x_id = 0) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
-
+layout( constant_id = 0 ) const uint jsplit = 1;
 layout( constant_id = 1 ) const uint N = 1;
 layout( constant_id = 2 ) const uint tokens = 1;
 layout( constant_id = 3 ) const uint offset = 1;
@@ -66,9 +66,9 @@ layout(set = 0, binding = 12) buffer y2_buffer {
 };
 
 void main() {
-    uint k = (gl_GlobalInvocationID.x / (N/128));
-    uint j0 = ((gl_GlobalInvocationID.x ) % (N/128)) * 128;
-    uint j1 = ((gl_GlobalInvocationID.x ) % (N/128)) * 128 + 128;
+    uint k = gl_GlobalInvocationID.x;
+    uint j0 = gl_GlobalInvocationID.y * jsplit;
+    uint j1 = j0 + jsplit;
 
     if (k < N) {
         for (uint token = 0u; token < tokens; token++) {

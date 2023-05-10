@@ -18,12 +18,14 @@ void cuda_mm8_threec(unsigned long long N,
     float *y1,
     float *y2,
     unsigned long long offset,
-       unsigned long long tokenlength
+       unsigned long long tokenlength,
+     unsigned long long  jsplit
 
 ){
 const int stream_id = 0;
 const int emb = N;
-vuda::launchKernel("kernel_mm8_threec.spv", "main", stream_id, emb, emb/128, emb, tokenlength, offset, xy, w, w1, w2, r, r1, r2, o1, o2, o3, y, y1, y2);
+vuda::dim3 kernalparams = vuda::dim3(N, N/jsplit, 1);
+vuda::launchKernel("kernel_mm8_threec.spv", "main", stream_id, kernalparams, jsplit, emb, tokenlength, offset, xy, w, w1, w2, r, r1, r2, o1, o2, o3, y, y1, y2);
 }
 
 void cuda_mm8_one(unsigned long long N,
@@ -35,12 +37,14 @@ void cuda_mm8_one(unsigned long long N,
     float *y,
     unsigned long long offset,
        unsigned long long tokenlength
-
+,
+     unsigned long long  jsplit
 ){
 const int stream_id = 0;
 const int emb = N;
 const int oemb = M;
-vuda::launchKernel("kernel_mm8_one.spv", "main", stream_id, oemb, 1, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
+vuda::dim3 kernalparams = vuda::dim3(M, N/jsplit, 1);
+vuda::launchKernel("kernel_mm8_one.spv", "main", stream_id, kernalparams, jsplit, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
 }
 
 void cuda_mm8_one(unsigned long long N,
@@ -52,11 +56,13 @@ void cuda_mm8_one(unsigned long long N,
     float *y,
     unsigned long long offset,
        unsigned long long tokenlength
-
+,
+    unsigned long long jsplit
 ){
 const int stream_id = 0;
 const int emb = N;
 const int oemb = M;
 const int jint = 1;
-vuda::launchKernel("kernel_mm8_oned.spv", "main", stream_id, oemb, jint, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
+vuda::dim3 kernalparams = vuda::dim3(M, N/jsplit, 1);
+vuda::launchKernel("kernel_mm8_oned.spv", "main", stream_id, kernalparams, jsplit, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
 }
