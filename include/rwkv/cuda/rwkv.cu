@@ -1,6 +1,5 @@
-#if !defined(__NVCC__) and defined(__HIPCC__)
+#ifndef __NVCC__
 // Allow HIP/amd to compile this file
-
 #include "hip/hip_runtime.h"
 #define cudaMalloc hipMalloc
 #define cudaFree hipFree
