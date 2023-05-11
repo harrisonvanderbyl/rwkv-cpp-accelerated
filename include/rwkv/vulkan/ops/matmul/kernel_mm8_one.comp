@@ -1,0 +1,61 @@
+
+#version 450
+
+#extension GL_EXT_shader_atomic_float : require
+#extension GL_EXT_shader_8bit_storage: require 
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+//
+layout(local_size_x = 8, local_size_y = 4, local_size_z = 1 ) in;
+
+layout( constant_id = 0 ) const uint jsplit = 1;
+layout( constant_id = 1 ) const uint N = 1;
+layout( constant_id = 2 ) const uint M = 1;
+layout( constant_id = 3 ) const uint tokens = 1;
+layout( constant_id = 4 ) const uint offset = 1;
+
+layout(set = 0, binding = 0) readonly buffer xy_buffer {
+    float xy[];
+};
+
+layout(set = 0, binding = 1) readonly buffer w_buffer {
+    uint8_t w[];
+};
+
+
+layout(set = 0, binding = 2) readonly buffer r_buffer {
+    float r[];
+};
+
+
+layout(set = 0, binding = 3) readonly buffer o1_buffer {
+    float o1[];
+};
+
+
+layout(set = 0, binding = 4) buffer y_buffer {
+    float y[];
+};
+
+
+void main() {
+    uint k = gl_GlobalInvocationID.x;
+    uint j0 = gl_GlobalInvocationID.y * jsplit;
+    uint j1 = j0 + jsplit;
+
+    if (k < M ) {
+        for (uint token = 0u; token < tokens; token++) {
+            float y_local = 0.0;
+            for (int j = int(j0); j < int(j1); ++j) {
+            uint index = j + token * N;
+
+            y_local += float(xy[index]) * ((float(w[j * M + k + offset * N * M]) ) * r[j + offset * N] + o1[j + offset * N]);
+            
+            }
+            atomicAdd(y[k + token*M], y_local);
+            // y[k + token*M] = float(M);
+            
+        }
+        
+    }
+}

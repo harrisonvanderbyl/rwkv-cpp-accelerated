@@ -101,7 +101,11 @@
         "any": "cpp",
         "coroutine": "cpp",
         "source_location": "cpp",
-        "future": "cpp"
+        "future": "cpp",
+        "*.hip": "cpp",
+        "valarray": "cpp",
+        "*.ipp": "cpp",
+        "*.comp": "glsl"
     },
     "C_Cpp.errorSquiggles": "enabled",
     "cmake.sourceDirectory": "C:/Users/harrb/Desktop/rwkv/rwkv-cpp-cuda/examples/terminalchat"

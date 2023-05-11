@@ -1,4 +1,3 @@
-
 # RWKV Cuda [![Support me on Patreon](https://img.shields.io/endpoint.svg?url=https%3A%2F%2Fshieldsio-patreon.vercel.app%2Fapi%3Fusername%3DUnexplored_Horizons%26type%3Dpatrons&style=flat)](https://patreon.com/Unexplored_Horizons)
 This is a super simple c++/cuda implementation of rwkv with no pytorch/libtorch dependencies.
 
@@ -15,6 +14,8 @@ included is a simple example of how to use in both c++ and python.
 * Optional Python binding using pytorch tensors as wrappers
 * Native tokenizer!
 * Windows Support!
+* HIP(AMD) GPU support!
+* Vulkan(All) Support!
 * Distributable programs! (check actions for the prebuilt example apps)
 * [Godot module](https://github.com/harrisonvanderbyl/godot-rwkv)
 
@@ -34,23 +35,18 @@ included is a simple example of how to use in both c++ and python.
 
 ## Build Instructions
 
-### Build on Linux
+### Build example storygen on Linux/windows
 ```
-$./build.sh
-```
-
-### Build on Windows
-
-```
-> mkdir build
-> cd build
-> cmake ..
-> cmake --build . --config release
+# in example/storygen
+build.sh # Linux/nvidia
+build.bat # Windows/nvidia
+amd.sh # Linux/Amd
+vulkan.sh # Linux/Vulkan(all)
 ```
 
-You can find executable at build/release/rwkv.exe
+You can find executable at build/release/rwkv[.exe]
 
-Make sure you already installed CUDA Toolkit and Visual Studio 2022.
+Make sure you already installed CUDA Toolkit / HIP development tools / Vulkan development tools
 
 ## Convert the model into the format
 

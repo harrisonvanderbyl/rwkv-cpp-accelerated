@@ -1,0 +1,92 @@
+
+#version 450
+
+#extension GL_EXT_shader_atomic_float : require
+#extension GL_EXT_shader_8bit_storage: require 
+#extension GL_EXT_shader_explicit_arithmetic_types : require
+#extension GL_EXT_shader_explicit_arithmetic_types_int8 : require
+//
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+
+layout( constant_id = 0 ) const uint jsplit = 1;
+layout( constant_id = 1 ) const uint N = 1;
+layout( constant_id = 2 ) const uint tokens = 1;
+layout( constant_id = 3 ) const uint offset = 1;
+
+layout(set = 0, binding = 0) readonly buffer xy_buffer {
+    float xy[];
+};
+
+layout(set = 0, binding = 1) readonly buffer w_buffer {
+    uint8_t w[];
+};
+
+layout(set = 0, binding = 2) readonly buffer w1_buffer {
+    uint8_t w1[];
+};
+
+layout(set = 0, binding = 3) readonly buffer w2_buffer {
+    uint8_t w2[];
+};
+
+layout(set = 0, binding = 4) readonly buffer r_buffer {
+    float r[];
+};
+
+layout(set = 0, binding = 5) readonly buffer r1_buffer {
+    float r1[];
+};
+
+layout(set = 0, binding = 6) readonly buffer r2_buffer {
+    float r2[];
+};
+
+layout(set = 0, binding = 7) readonly buffer o1_buffer {
+    float o1[];
+};
+
+layout(set = 0, binding = 8) readonly buffer o2_buffer {
+    float o2[];
+};
+
+layout(set = 0, binding = 9) readonly buffer o3_buffer {
+    float o3[];
+};
+
+layout(set = 0, binding = 10) buffer y_buffer {
+    float y[];
+};
+
+layout(set = 0, binding = 11) buffer y1_buffer {
+    float y1[];
+};
+
+layout(set = 0, binding = 12) buffer y2_buffer {
+    float y2[];
+};
+
+void main() {
+    uint k = gl_GlobalInvocationID.x;
+    uint j0 = gl_GlobalInvocationID.y * jsplit;
+    uint j1 = j0 + jsplit;
+
+    if (k < N) {
+        for (uint token = 0u; token < tokens; token++) {
+            float y_local = 0.0;
+            float y1_local = 0.0;
+            float y2_local = 0.0;
+
+            for (int j = int(j0); j < int(j1); ++j) {
+                uint index = j + token * N * 3u;
+
+                y_local += xy[index] * ((float(w[j * N + k + offset * N * N]) ) * r[j + offset * N] + o1[j + offset * N]);
+                y1_local += xy[index + N] * ((float(w1[j * N + k + offset * N * N]) ) * r1[j + offset * N] + o2[j + offset * N]);
+                y2_local += xy[index + N * 2u] * ((float(w2[j * N + k + offset * N * N]) ) * r2[j + offset * N] + o3[j + offset * N]);
+                
+            }
+            atomicAdd(y[k + token*N], y_local);
+            atomicAdd(y1[k + token*N], y1_local);
+            atomicAdd(y2[k + token*N], y2_local);
+        }
+    }
+}

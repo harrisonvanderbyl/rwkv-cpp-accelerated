@@ -56,3 +56,11 @@ int typical(float* _logits, float _temp = 0.9, float _tau = 0.8)
     auto out = nc::random::discrete<int>(nc::shape(tau),probs);
     return out[0];  
 }
+
+std::vector<unsigned long long> typical(int batchsize, float* _logits, float _temp = 0.9, float _tau = 0.8){
+    std::vector<unsigned long long> out;
+    for(int i = 0; i < batchsize; i++){
+        out.push_back(typical(&_logits[i*50277], _temp, _tau));
+    }
+    return out;
+}

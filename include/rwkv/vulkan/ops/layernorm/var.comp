@@ -1,0 +1,38 @@
+
+#version 450
+#extension GL_EXT_shader_atomic_float : require
+
+// Define the workgroup size
+layout( local_size_x_id = 0 ) in;
+
+layout( constant_id = 1 ) const uint N = 1;
+layout( constant_id = 2 ) const uint tokens = 1;
+
+// Input/output buffers
+layout(set = 0, binding = 0, std430) buffer Acc {
+    float acc[];
+};
+layout(set = 0, binding = 1, std430) readonly buffer A {
+    double a[];
+};
+layout(set = 0, binding = 2, std430) readonly buffer Mean {
+    float mean[];
+};
+
+void main() {
+    
+    uint tid = gl_GlobalInvocationID.x; 
+
+    if(tid < N)
+    {
+        for (uint token = 0; token < tokens; token++)
+        {
+            float diff = float(a[tid + token * N]) - mean[token] / float(N);
+            
+            float outs = diff * diff;
+
+            atomicAdd(acc[tokens+token], outs);
+        }
+        
+    }
+}

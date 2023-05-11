@@ -7,7 +7,7 @@
 #include <fstream>
 #include <optional>
 
-
+# pragma once
 
 struct TokPairHash {
 	std::size_t operator()(const std::pair<std::string, std::string> &p) const noexcept ;
