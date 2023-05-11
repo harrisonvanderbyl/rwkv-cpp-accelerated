@@ -5,7 +5,6 @@
 #include <iostream>
 #include <tuple>
 #include <vector>
-#include "rwkv/tokenizer/tokenizer.h"
 #include "rwkv/enums/enum.h"
 
 std::string names[46] = {
@@ -242,6 +241,7 @@ class RWKVState
 
 };
 
+#include "rwkv/tokenizer/tokenizer.h"
 class RWKV
 {
 public:
