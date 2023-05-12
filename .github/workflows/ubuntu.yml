@@ -43,16 +43,40 @@ jobs:
         id: cuda-toolkit
         with:
           cuda: '11.7.0'
-      
+
+      -name: Prepare Vulkan SDK
+        uses: humbletim/setup-vulkan-sdk@v1.2.0
+        with:
+          vulkan-query-version: 1.3.204.0
+          vulkan-components: Vulkan-Headers, Vulkan-Loader
+          vulkan-use-cache: true
+            
       # run bash file
       - name: run bash file
         run: |
-          cd examples/terminalchat &&
+          cd examples/storygen &&
           ./build.sh
 
       # package ./release into a zip and upload it as an artifact
       - name: Upload Release
         uses: actions/upload-artifact@v2
         with:
-          name: Release
-          path: ./examples/terminalchat/release
+          name: Cuda(Nvidia)
+          path: ./examples/storygen/release
+
+      - name: cleanup
+        run: |
+          cd examples/storygen/ &&
+          rm ./release/storygen
+
+      - name: build vulkan
+        run: |
+          cd examples/storygen &&
+          ./vulkan.sh
+          
+      - name: Upload Vulkan
+        uses: actions/upload-artifact@v2
+        with:
+          name: Vulkan(All)
+          path: ./examples/storygen/release
+      

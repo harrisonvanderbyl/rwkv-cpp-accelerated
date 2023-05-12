@@ -46,7 +46,7 @@ jobs:
     # run bash file
     - name: run bat file
       run: |
-        cd examples/terminalchat &&
+        cd examples/storygen &&
         ./build.bat
 
     # package ./release into a zip and upload it as an artifact
@@ -54,4 +54,4 @@ jobs:
       uses: actions/upload-artifact@v2
       with:
         name: Release
-        path: ./examples/terminalchat/release
+        path: ./examples/storygen/release
