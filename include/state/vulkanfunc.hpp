@@ -19,8 +19,7 @@ namespace vuda
             };
 
             const std::vector<FamilyQueueCandidate> candidates = {
-                FamilyQueueCandidate(vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eGraphics),
-                FamilyQueueCandidate(vk::QueueFlagBits::eTransfer, vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eGraphics),
+                FamilyQueueCandidate(vk::QueueFlagBits::eCompute, vk::QueueFlagBits::eGraphics),
                 FamilyQueueCandidate(queueFlags, vk::QueueFlags())
             };
 

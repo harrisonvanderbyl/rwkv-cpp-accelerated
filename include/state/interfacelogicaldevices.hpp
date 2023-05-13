@@ -75,7 +75,7 @@ namespace vuda
 
                 //
                 // get the first index into queueFamiliyProperties which supports compute
-                uint32_t computeQueueFamilyIndex = detail::vudaGetFamilyQueueIndex(queueFamilyProperties, vk::QueueFlagBits::eCompute | vk::QueueFlagBits::eTransfer);
+                uint32_t computeQueueFamilyIndex = detail::vudaGetFamilyQueueIndex(queueFamilyProperties, vk::QueueFlagBits::eCompute);
 
                 //
                 // HARDCODED MAX NUMBER OF STREAMS
