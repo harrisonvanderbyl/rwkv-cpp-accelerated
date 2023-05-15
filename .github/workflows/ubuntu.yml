@@ -44,12 +44,8 @@ jobs:
         with:
           cuda: '11.7.0'
 
-      - name: Prepare Vulkan SDK
-        uses: humbletim/setup-vulkan-sdk@v1.2.0
-        with:
-          vulkan-query-version: 1.3.204.0
-          vulkan-components: Vulkan-Headers, Vulkan-Loader
-          vulkan-use-cache: true
+      - name: install vulkan headers and vulkan sdk
+        run: apt install vulkan-headers & apt install vulkan-sdk
             
       # run bash file
       - name: run bash file
