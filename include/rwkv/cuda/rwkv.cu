@@ -217,6 +217,7 @@ __global__ void sigmoid(
         }
     }
 }
+
 __global__ void kernel_wkvc_forward(const unsigned long long C,
                                     const double *__restrict__ const w, const double *__restrict__ const u, const float *__restrict__ const k, const float *__restrict__ const v,
                                     const float *__restrict__ const r, double *__restrict__ const y, double *__restrict__ const _aa, double *__restrict__ const _bb, double *__restrict__ const _pp,
