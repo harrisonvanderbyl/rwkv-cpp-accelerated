@@ -12,6 +12,7 @@ on:
     paths:
       - examples/**
       - include/**
+      - .github/workflows/ubuntu.yml
   pull_request:
     branches: [ "main" ]
 
@@ -45,7 +46,7 @@ jobs:
           cuda: '11.7.0'
 
       - name: install vulkan headers and vulkan sdk
-        run: apt install vulkan-headers & apt install vulkan-sdk
+        run: sudo apt install vulkan-headers & sudo apt install vulkan-sdk
             
       # run bash file
       - name: run bash file
