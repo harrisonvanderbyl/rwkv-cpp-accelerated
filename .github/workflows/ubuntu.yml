@@ -39,15 +39,16 @@ jobs:
 
       steps:
       - uses: actions/checkout@v3
-
+      
+      - name: install vulkan headers and vulkan sdk
+        run: sudo apt install libvulkan-dev & sudo apt install vulkan-sdk
+            
       - uses: Jimver/cuda-toolkit@v0.2.10
         id: cuda-toolkit
         with:
           cuda: '11.7.0'
 
-      - name: install vulkan headers and vulkan sdk
-        run: sudo apt install vulkan-headers & sudo apt install vulkan-sdk
-            
+      
       # run bash file
       - name: run bash file
         run: |
