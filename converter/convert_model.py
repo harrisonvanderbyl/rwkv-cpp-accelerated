@@ -13,7 +13,7 @@ current_path = os.path.dirname(os.path.abspath(__file__))
 
 class ConvertRWKV(torch.nn.Module):
 
-    def __init__(self, w, dims, layers):
+    def __init__(self, w, dims, layers, vocabsize):
         super().__init__()
 
         self.emptyState = layers * [[[0]*dims]*4+[[-1e30]*dims]]
@@ -22,6 +22,7 @@ class ConvertRWKV(torch.nn.Module):
         vustatec = torch.tensor([self.emptyState[i][3] for i in range(layers)]).double().contiguous()
         vustated = torch.tensor([self.emptyState[i][4] for i in range(layers)]).double().contiguous()
         vustatee = torch.tensor([self.emptyState[i][1] for i in range(layers)]).double().contiguous()
+        self.vocabsize = vocabsize
         self.emptyState = [vustatea,vustateb,vustatec,vustated,vustatee]
 
         self.emb =  w["emb.weight"].float().contiguous()
@@ -75,7 +76,7 @@ class ConvertRWKV(torch.nn.Module):
             print("stacking weights")
             keysp = key.split(".")[:2]
             keysp = "".join(keysp)
-            self.__dict__[f"{keysp}weights"] = torch.stack([x[0] for x in weights])
+            self.__dict__[f"{keysp}weights"] = torch.stack([x[0] for x in weights]).cpu()
             self.__dict__[f"{keysp}ranges"] = torch.stack(
                 [x[1] for x in weights]
             ).to(dtype=torch.float32, memory_format=torch.contiguous_format)
@@ -98,14 +99,14 @@ class ConvertRWKV(torch.nn.Module):
 
         self.rx = torch.arange((self.dim), dtype = torch.double)
         self.buffer0 = torch.arange(self.dim, dtype=torch.double)
-        self.buffer1 = torch.arange(50277, dtype=torch.float)
+        self.buffer1 = torch.arange(vocabsize, dtype=torch.float)
         self.buffer2 = torch.arange(self.dim, dtype=torch.float)
         self.buffer3 = torch.arange(self.dim, dtype=torch.float)
         self.ffnvbuf = torch.arange(self.dim, dtype=torch.double)
         self.ffnkbuf = torch.arange(self.dim, dtype=torch.double)
         self.ffkeybuffer = torch.arange(self.dim*4, dtype=torch.float)       
 
-    def quantize_matrix(self, xx):
+    def quantize_matrix(self, xx:torch.Tensor):
         x = xx
         rang = 255
         mini = x.min(0)[0].double()
@@ -116,7 +117,7 @@ class ConvertRWKV(torch.nn.Module):
         fractmat = fractmat.mean(0)
         mini = mini.double() + fractmat*ran.double()
         
-        return [out.t().to(torch.uint8).contiguous(),ran.to(torch.float32).clone(), mini.to(torch.float32).clone()]
+        return [out.t().to(torch.uint8).contiguous(),ran.to(torch.float32).clone().cpu(), mini.to(torch.float32).clone().cpu()]
 
 
     def save_converted(self):
@@ -130,52 +131,53 @@ class ConvertRWKV(torch.nn.Module):
             outfile,
             self.layers,
             self.dim,
-            self.rx,
-            self.emb,
-            self.cudalnin,
-            self.emptyState[0],
-            self.emptyState[1],
-            self.emptyState[2],
-            self.emptyState[3],
-            self.emptyState[4],
-            self.buffer0,
-            self.buffer1,
-            self.buffer2,
-            self.buffer3,
-            self.mixk,
-            self.mixv,
-            self.mixr,
-            self.attkeyweights,
-            self.attvalueweights,
-            self.attreceptanceweights,
-            self.attkeyranges,
-            self.attvalueranges,
-            self.attreceptanceranges,
-            self.attkeyzp,
-            self.attvaluezp,
-            self.attreceptancezp,
-            self.attoutputweights,
-            self.attoutputranges,
-            self.attoutputzp,
-            self.mixffnk,
-            self.mixffnr,
-            self.ffnkeyweights,
-            self.ffnvalueweights,
-            self.ffnreceptanceweights,
-            self.ffnkeyranges,
-            self.ffnvalueranges,
-            self.ffnreceptanceranges,
-            self.ffnkeyzp,
-            self.ffnvaluezp,
-            self.ffnreceptancezp,
-            self.ffnkbuf,
-            self.ffnvbuf,
-            self.ffkeybuffer,
-            self.decay,
-            self.bonus,
-            self.cudahead,
-            self.cudaheadr,
-            self.cudaheadzp
+            self.vocabsize,
+            self.rx.cpu(),
+            self.emb.cpu(),
+            self.cudalnin.cpu(),
+            self.emptyState[0].cpu(),
+            self.emptyState[1].cpu(),
+            self.emptyState[2].cpu(),
+            self.emptyState[3].cpu(),
+            self.emptyState[4].cpu(),
+            self.buffer0.cpu(),
+            self.buffer1.cpu(),
+            self.buffer2.cpu(),
+            self.buffer3.cpu(),
+            self.mixk.cpu(),
+            self.mixv.cpu(),
+            self.mixr.cpu(),
+            self.attkeyweights.cpu(),
+            self.attvalueweights.cpu(),
+            self.attreceptanceweights.cpu(),
+            self.attkeyranges.cpu(),
+            self.attvalueranges.cpu(),
+            self.attreceptanceranges.cpu(),
+            self.attkeyzp.cpu(),
+            self.attvaluezp.cpu(),
+            self.attreceptancezp.cpu(),
+            self.attoutputweights.cpu(),
+            self.attoutputranges.cpu(),
+            self.attoutputzp.cpu(),
+            self.mixffnk.cpu(),
+            self.mixffnr.cpu(),
+            self.ffnkeyweights.cpu(),
+            self.ffnvalueweights.cpu(),
+            self.ffnreceptanceweights.cpu(),
+            self.ffnkeyranges.cpu(),
+            self.ffnvalueranges.cpu(),
+            self.ffnreceptanceranges.cpu(),
+            self.ffnkeyzp.cpu(),
+            self.ffnvaluezp.cpu(),
+            self.ffnreceptancezp.cpu(),
+            self.ffnkbuf.cpu(),
+            self.ffnvbuf.cpu(),
+            self.ffkeybuffer.cpu(),
+            self.decay.cpu(),
+            self.bonus.cpu(),
+            self.cudahead.cpu(),
+            self.cudaheadr.cpu(),
+            self.cudaheadzp.cpu()
         )
 
 
@@ -201,7 +203,7 @@ def convert_model(path: str):
         extra_include_paths=[os.path.join(current_path, "../include/rwkv/rwkv")],
         )
 
-    w = torch.load(path, map_location="cpu")
+    w = torch.load(path, map_location="cuda:1")
     
     # Verify the file contents
     if not is_valid_weights_file(w):
@@ -211,8 +213,14 @@ def convert_model(path: str):
     dims = len(w["blocks.0.att.key.weight"])
     layers = len(
         list(filter(lambda x: "blocks" in x and "ln1.bias" in x, w.keys())))
+    
+    vocabsize = w["emb.weight"].shape[0]
+    print("Converting model...")
+    print(f"Dimensions: {dims}")
+    print(f"Layers: {layers}")
+    print(f"Vocab size: {vocabsize}")
 
-    convert_model_instance = ConvertRWKV(w, dims, layers)
+    convert_model_instance = ConvertRWKV(w, dims, layers, vocabsize)
     convert_model_instance.save_converted()
 
 

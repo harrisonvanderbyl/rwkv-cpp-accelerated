@@ -6,7 +6,7 @@
 #include <tuple>
 #include <vector>
 #include "rwkv/enums/enum.h"
-
+#include "rwkv/tokenizer/worldTokenizer.h"
 std::string names[46] = {
     "xbuf",
     "embed",
@@ -123,7 +123,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
 
 unsigned long long getSize(unsigned long long i, unsigned long long a, unsigned long long b)
 {
-    unsigned long long sizes[46] = {b, 50277 * b, 4 * (a + 1) * b, a * b, a * b, a * b, a * b, a * b, b, 50277, b, b, a * b, a * b, a * b, a * b * b, a * b * b, a * b * b, a * b, a * b, a * b, a * b, a * b, a * b, a * b * b, a * b, a * b, a * b, a * b, a * b * b * 4, a * b * b * 4, a * b * b, a * b, a * b * 4, a * b, a * b, a * b * 4, a * b, b, b, b * 4, a * b, a * b, 50277 * b, b, b};
+    unsigned long long sizes[46] = {b, VOCAB * b, 4 * (a + 1) * b, a * b, a * b, a * b, a * b, a * b, b, VOCAB, b, b, a * b, a * b, a * b, a * b * b, a * b * b, a * b * b, a * b, a * b, a * b, a * b, a * b, a * b, a * b * b, a * b, a * b, a * b, a * b, a * b * b * 4, a * b * b * 4, a * b * b, a * b, a * b * 4, a * b, a * b, a * b * 4, a * b, b, b, b * 4, a * b, a * b, VOCAB * b, b, b};
     return sizes[i];
 }
 
@@ -262,7 +262,7 @@ public:
     // Cpu state tensors
     RWKVState *state;
 
-    GPT2Tokenizer *tokenizer;
+    RWKV_TOKENIZER *tokenizer;
 
     bool ready = false;
 
@@ -295,9 +295,9 @@ public:
         statepp = state->statepp;
         statedd = state->statedd;
 
-        out = new float[50277 * maxGPT];
+        out = new float[VOCAB * maxGPT];
         
-        for (unsigned long long i = 0; i < 50277 * maxGPT; i++)
+        for (unsigned long long i = 0; i < VOCAB * maxGPT; i++)
         {
             out[i] = 0;
         }
@@ -310,12 +310,8 @@ public:
     };
 
     void loadTokenizer(std::string vocabPath){
-        auto _tokenizer = GPT2Tokenizer::load(vocabPath+"/vocab.json", vocabPath+"/merges.txt");
-        if (!_tokenizer.has_value()) {
-            std::cerr << "Failed to load tokenizer" << std::endl;
-            return;
-        };
-        tokenizer = new GPT2Tokenizer(_tokenizer.value());
+        
+        tokenizer = new RWKV_TOKENIZER(vocabPath + "/vocabworld.txt");
     }
 
 
@@ -393,7 +389,8 @@ public:
     }
 
     long long loadContext(std::string input, bool progress = false){
-        std::vector<long long> initial = tokenizer->encode(input);auto tokens = tokenizer->encode(input);
+        std::vector<long long> initial = tokenizer->encode(input);
+        auto tokens = tokenizer->encode(input);
         std::cout << initial[0] << ":token";
         for(int i = 0; i < initial.size(); i+=maxContext)
         {

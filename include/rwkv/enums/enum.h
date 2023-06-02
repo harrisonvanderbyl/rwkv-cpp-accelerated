@@ -53,3 +53,5 @@ enum
     HEADR,
     HEADO
 };
+
+#define VOCAB 65536

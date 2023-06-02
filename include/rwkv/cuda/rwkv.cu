@@ -1,4 +1,5 @@
 #ifndef __NVCC__
+
 // Allow HIP/amd to compile this file
 #include "hip/hip_runtime.h"
 #define cudaMalloc hipMalloc
@@ -468,7 +469,7 @@ void getOutput(unsigned long long n_embed, unsigned long long n_layers, float *l
                float *logitsout, double *statexyout, double *stateaaout, double *statebbout, double *stateppout, double *stateddout, unsigned long long tokenlength)
 {
     // copy gpu tensor in to cpu tensor out
-    cudaMemcpy(logitsout, logitsin, 50277 * sizeof(float) * tokenlength, cudaMemcpyDeviceToHost);
+    cudaMemcpy(logitsout, logitsin, VOCAB * sizeof(float) * tokenlength, cudaMemcpyDeviceToHost);
     cudaMemcpy(statexyout, statexyin, n_embed * n_layers * sizeof(double)* tokenlength, cudaMemcpyDeviceToHost);
     cudaMemcpy(stateaaout, stateaain, n_embed * n_layers * sizeof(double)* tokenlength, cudaMemcpyDeviceToHost);
     cudaMemcpy(statebbout, statebbin, n_embed * n_layers * sizeof(double)* tokenlength, cudaMemcpyDeviceToHost);
@@ -585,8 +586,8 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
     std::tie(mean, variance) = meanvar(n_emb, x, ffnrbuffer, tokenlength);
     cuda_layernorm<<<(n_emb + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb, x, layernorms, 4 * (n_layers) + 2, mean, variance, buffer1, tokenlength);
     
-    cuda_memset<<<(tokenlength*50277 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*50277, buffer2, 0);
-    cudac_mm8_one(n_emb, 50277, buffer1, head, 50277, buffer2, headr, heado, 0, tokenlength);
+    cuda_memset<<<(tokenlength*VOCAB + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*VOCAB, buffer2, 0);
+    cudac_mm8_one(n_emb, VOCAB, buffer1, head, VOCAB, buffer2, headr, heado, 0, tokenlength);
     cudaDeviceSynchronize();
 
     
@@ -680,6 +681,8 @@ std::tuple<unsigned long long, unsigned long long> load(const std::string &filen
 
         binfile.read((char *)ptrs[i], size * Mtypes(i));
 
+        // logData((i*)ptrs[i], 2, getName(i));
+
         if (i == 1) // embedding table, stays on cpu
             continue;
 
@@ -707,6 +710,8 @@ std::tuple<unsigned long long, unsigned long long> load(const std::string &filen
 
         free(ptrs[i]);
         ptrs[i] = (int *)cuda_mem;
+
+        logData((double *)ptrs[i], 5, getName(i));
         
     }
 

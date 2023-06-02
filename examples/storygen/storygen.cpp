@@ -60,7 +60,7 @@ int main(){
             std::cout << "\n\nPress q to return\n\nDescribe the story you want written:>";
             std::getline(std::cin, input);
             input = input + "\n\n### Response:";
-            Rwkv.loadContext(input);
+            lasttoken = Rwkv.loadContext(input);
         }
         
         Rwkv.forward(lasttoken);
