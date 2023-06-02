@@ -2,7 +2,7 @@
 
 // )
 #version 450 core
-layout( local_size_x_id = 0 ) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1 ) in;
 //
 // size of vector defined by a specialization constant
 layout( constant_id = 1 ) const uint emb = 1;

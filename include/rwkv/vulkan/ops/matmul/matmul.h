@@ -19,13 +19,14 @@ void cuda_mm8_threec(unsigned long long N,
     float *y2,
     unsigned long long offset,
        unsigned long long tokenlength,
-     unsigned long long  jsplit
+     unsigned long long  jsplit,
+     unsigned long long jtile
 
 ){
 const int stream_id = 0;
 const int emb = N;
-vuda::dim3 kernalparams = vuda::dim3(N, N/jsplit, 1);
-vuda::launchKernel("kernel_mm8_threec.spv", "main", stream_id, kernalparams, jsplit, emb, tokenlength, offset, xy, w, w1, w2, r, r1, r2, o1, o2, o3, y, y1, y2);
+vuda::dim3 kernalparams = vuda::dim3(N/jtile, N/jsplit, jtile);
+vuda::launchKernel("kernel_mm8_threec.spv", "main", stream_id, kernalparams, jsplit, jtile, emb, tokenlength, offset, xy, w, w1, w2, r, r1, r2, o1, o2, o3, y, y1, y2);
 }
 
 void cuda_mm8_one(unsigned long long N,
@@ -38,13 +39,14 @@ void cuda_mm8_one(unsigned long long N,
     unsigned long long offset,
        unsigned long long tokenlength
 ,
-     unsigned long long  jsplit
+     unsigned long long  jsplit,
+     unsigned long long jtile
 ){
 const int stream_id = 0;
 const int emb = N;
 const int oemb = M;
-vuda::dim3 kernalparams = vuda::dim3(M, N/jsplit, 1);
-vuda::launchKernel("kernel_mm8_one.spv", "main", stream_id, kernalparams, jsplit, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
+vuda::dim3 kernalparams = vuda::dim3(M/jtile, N/jsplit, jtile);
+vuda::launchKernel("kernel_mm8_one.spv", "main", stream_id, kernalparams, jsplit,jtile, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
 }
 
 void cuda_mm8_one(unsigned long long N,
@@ -57,12 +59,13 @@ void cuda_mm8_one(unsigned long long N,
     unsigned long long offset,
        unsigned long long tokenlength
 ,
-    unsigned long long jsplit
+    unsigned long long jsplit,
+     unsigned long long jtile
 ){
 const int stream_id = 0;
 const int emb = N;
 const int oemb = M;
 const int jint = 1;
-vuda::dim3 kernalparams = vuda::dim3(M, N/jsplit, 1);
-vuda::launchKernel("kernel_mm8_oned.spv", "main", stream_id, kernalparams, jsplit, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
+vuda::dim3 kernalparams = vuda::dim3(M/jtile, N/jsplit, jtile);
+vuda::launchKernel("kernel_mm8_oned.spv", "main", stream_id, kernalparams, jsplit,jtile, emb, oemb, tokenlength, offset, xy, w,  r, o1, y);
 }

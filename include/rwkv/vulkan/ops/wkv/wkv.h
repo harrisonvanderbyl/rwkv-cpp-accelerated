@@ -6,7 +6,7 @@ void kernel_wkvc_forward(int embsplit,  unsigned long long emb,
                                      double *  w,  double *  u,  float *  k,  float *  v,
                                      float *  r, double *  y, double *  _aa, double *  _bb, double *  _pp,
                                     unsigned long long offset, unsigned long long layers, unsigned long long tokenlength, int mode = 1){
-    const int blocks = (emb + embsplit - 1);
+    vuda::dim3 blocks = vuda::dim3(emb, 1, 1);
     const int threads = embsplit;
 
     const int stream_id = 0;

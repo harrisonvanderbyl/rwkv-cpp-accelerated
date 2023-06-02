@@ -13,8 +13,8 @@
 #include "rwkv/vulkan/ops/matmul/matmul.h"
 #include "rwkv/vulkan/ops/wkv/wkv.h"
 #include "rwkv/vulkan/ops/sigmoid/sigmoid.h"
-#define MM8_ONE_JSPLIT 32
-#define MM8_ONE_TILE 256
+#define MM8_ONE_JSPLIT 256
+#define MM8_ONE_TILE 8
 #define EMBSPLIT 16
 #define EMBBLOCK 16
 
@@ -78,7 +78,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
     uint8_t *head, float *headr, float *heado, 
     unsigned long long tokenlength, MODE mode = PARRALEL)
 {
-  
+    
     // copy the embedding table to its own buffer at the end, so the data is contiguous
     for(unsigned long long i = 0; i < tokenlength; i++){
         for(int m = 0; m < n_emb; m++){
@@ -92,6 +92,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
 
     // // copy buffer3 to buffer1
     // setx<<<(n_emb*tokenlength + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(n_emb*tokenlength, buffer3, buffer1);
+    
     setx(buffer1, buffer3, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
     
     
@@ -104,7 +105,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
         layernorm(EMBSPLIT,EMBBLOCK, n_emb, x, layernorms, n_layers, 4*i + 2, tokenlength, buffer1, ffnrbuffer);
         mixatt(EMBSPLIT,n_emb, buffer1, statexy, mixk, mixv, mixr, ffnrbuffer, i, buffer2, buffer3, buffer4,n_layers, tokenlength, mode);
         
-        cuda_mm8_threec(n_emb, ffnrbuffer, km, vm, rm, kr, vr, rr, o1, o2, o3, buffer2, buffer3, buffer4, i, tokenlength, MM8_ONE_JSPLIT);
+        cuda_mm8_threec(n_emb, ffnrbuffer, km, vm, rm, kr, vr, rr, o1, o2, o3, buffer2, buffer3, buffer4, i, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
         
     //     // buffer2, 3, 4 = k,v,r
 
@@ -113,7 +114,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
 
         setx(buffer2, x, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
         
-        cuda_mm8_one(n_emb, n_emb, buffer1, attout, attoutr, attouto, buffer2, i, tokenlength, MM8_ONE_JSPLIT);
+        cuda_mm8_one(n_emb, n_emb, buffer1, attout, attoutr, attouto, buffer2, i, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
         // logData(buffer2, 2, "\natout");
         
         setx(x, buffer2, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
@@ -126,22 +127,22 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
 
         setx(buffer2, 0.0, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
 
-        cuda_mm8_one(n_emb, n_emb, ffnvbuffer, ffnr, ffnrr, ffnro, buffer2, i, tokenlength, MM8_ONE_JSPLIT);
+        cuda_mm8_one(n_emb, n_emb, ffnvbuffer, ffnr, ffnrr, ffnro, buffer2, i, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
 
         
 
         setx(ffnrbuffer, 0.0, 4*n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
         
-        cuda_mm8_one(n_emb, n_emb * 4, ffnkbuffer, ffnk, ffnkr, ffnko, ffnrbuffer, i, tokenlength, MM8_ONE_JSPLIT);
+        cuda_mm8_one(n_emb, n_emb * 4, ffnkbuffer, ffnk, ffnkr, ffnko, ffnrbuffer, i, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
         // logData(ffnrbuffer, 2, "ffnr");
 
-        sigmoidrelusquared(buffer2, ffnrbuffer, n_emb, EMBSPLIT, EMBBLOCK);
+        sigmoidrelusquared(buffer2, ffnrbuffer, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
         setx(buffer3, 0.0, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);
         
-        cuda_mm8_one(n_emb * 4, n_emb, ffnrbuffer, ffnv, ffnvr, ffnvo, buffer3, i, tokenlength, MM8_ONE_JSPLIT);
+        cuda_mm8_one(n_emb * 4, n_emb, ffnrbuffer, ffnv, ffnvr, ffnvo, buffer3, i, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
         // logData(buffer3, 2, "buffer3");
         // logData(buffer2, 2, "buffer2");
-        blockout(x, buffer3, buffer2, n_emb, EMBSPLIT, EMBBLOCK);   
+        blockout(x, buffer3, buffer2, n_emb*tokenlength, EMBSPLIT, EMBBLOCK);   
           
         // logData(x, 2, "finalx");
  
@@ -156,7 +157,7 @@ void cuda_rwkv_parralel(unsigned long long n_layers, unsigned long long n_emb, u
     // logData(buffer1, 2, "LAST");
     setx(buffer2, 0.0, tokenlength*50277, EMBSPLIT, EMBBLOCK);
     // cuda_memset<<<(tokenlength*50277 + EMBSPLIT - 1) / EMBSPLIT, EMBSPLIT / EMBBLOCK>>>(tokenlength*50277, buffer2, 0);
-    cuda_mm8_one(n_emb, 50277, buffer1, head, headr, heado, buffer2, 0, tokenlength, MM8_ONE_JSPLIT);
+    cuda_mm8_one(n_emb, 50277, buffer1, head, headr, heado, buffer2, 0, tokenlength, MM8_ONE_JSPLIT, MM8_ONE_TILE);
     // logData(buffer2, 2, "Logits");
     // logData(buffer2, 50277, "Logits");
     // cudac_mm8_one(n_emb, 50277, buffer1, head, 50277, buffer2, headr, heado, 0, tokenlength);

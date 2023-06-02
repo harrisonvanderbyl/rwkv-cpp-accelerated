@@ -217,6 +217,7 @@ __global__ void sigmoid(
         }
     }
 }
+#define EXPNN(x) pow(2.0,1.442695040 * x)
 
 __global__ void kernel_wkvc_forward(const unsigned long long C,
                                     const double *__restrict__ const w, const double *__restrict__ const u, const float *__restrict__ const k, const float *__restrict__ const v,
@@ -244,12 +245,12 @@ __global__ void kernel_wkvc_forward(const unsigned long long C,
                 double pp = _pp[stateoffset];
 
                 const double vv = v[ii + token * C];
-                const double wr1 = aa + exp(u[ii + C * offset] + w[ii + C * offset] + k[ii + token * C]) * vv;
-                const double wr2 = bb + exp(u[ii + C * offset] + w[ii + C * offset] + k[ii + token * C]);
+                const double wr1 = aa + EXPNN(u[ii + C * offset] + w[ii + C * offset] + k[ii + token * C]) * vv;
+                const double wr2 = bb + EXPNN(u[ii + C * offset] + w[ii + C * offset] + k[ii + token * C]);
                 y[ii + token * C] = (wr1) / wr2;
-                y[ii + token * C] = (1.0 / (1.0 + exp(-r[ii + token * C]))) * y[ii + token * C];
-                aa = (aa + exp(double(k[ii + token * C])) * vv) * exp(w[ii + C * offset]);
-                bb = (bb + exp(double(k[ii + token * C]))) * exp(w[ii + C * offset]);
+                y[ii + token * C] = (1.0 / (1.0 + EXPNN(-r[ii + token * C]))) * y[ii + token * C];
+                aa = (aa + EXPNN(double(k[ii + token * C]) + w[ii + C * offset]) * vv) * EXPNN(w[ii + C * offset]);
+                bb = (bb + EXPNN(double(k[ii + token * C]) + w[ii + C * offset])) * EXPNN(w[ii + C * offset]);
                 _aa[stateoffset] = aa;
                 _bb[stateoffset] = bb;
                 _pp[stateoffset] = pp;

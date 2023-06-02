@@ -3,7 +3,7 @@
 #extension GL_EXT_shader_atomic_float : require
 
 // Define the workgroup size
-layout( local_size_x_id = 0 ) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1 ) in;
 
 layout( constant_id = 1 ) const uint N = 1;
 layout( constant_id = 2 ) const uint tokens = 1;

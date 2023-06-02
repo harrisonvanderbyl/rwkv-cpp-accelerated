@@ -8,17 +8,17 @@ std::tuple<float *, float *> meanvar(int embsplit, int embblock, unsigned long l
 {
     float *acc = &buffer[0];
     setx(acc, 0.0, tokenlength*2, embsplit, embblock);
-    const int blocks = (emb + embsplit - 1);
+    vuda::dim3 kernalparams = vuda::dim3(emb, 1, 1);
     const int threads = embsplit;
 
     const int stream_id = 0;
     const int embint = emb;
-    vuda::launchKernel("sum.spv", "main", stream_id, blocks, threads, acc, a, embint, tokenlength);
+    vuda::launchKernel("sum.spv", "main", stream_id, kernalparams, threads, acc, a, embint, tokenlength);
 
     float *mean = &buffer[0];
     // cudaMemcpy(mean, acc, sizeof(float)*tokenlength, cudaMemcpyDeviceToDevice);
     // setx(acc, 0, tokenlength, embsplit, embblock);
-    vuda::launchKernel("var.spv", "main", stream_id, blocks, threads, acc, a, mean, emb);
+    vuda::launchKernel("var.spv", "main", stream_id, kernalparams, threads, acc, a, mean, emb);
     float *var = &buffer[tokenlength];
     // cudaMemcpy(var, acc, sizeof(float)*tokenlength, cudaMemcpyDeviceToDevice);
 
@@ -31,11 +31,11 @@ void layernorm(int embsplit, int embblock, int n_emb, double *x, double *layerno
     float* variance;
     std::tie(mean, variance) = meanvar(embsplit, embblock, n_emb, x, ffnrbuffer, tokenlength);
 
-    const int blocks = (n_emb + embsplit - 1);
+    vuda::dim3 kernalparams = vuda::dim3(n_emb, 1, 1);
     const int threads = embsplit;
 
     const int stream_id = 0;
-    vuda::launchKernel("layernorm.spv", "main", stream_id, blocks, threads, n_emb, offset, tokenlength, x, layernorms, mean, buffer1);
+    vuda::launchKernel("layernorm.spv", "main", stream_id, kernalparams, threads, n_emb, offset, tokenlength, x, layernorms, mean, buffer1);
     
     }
 //     float *mean;

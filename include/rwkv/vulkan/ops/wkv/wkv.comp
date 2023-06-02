@@ -1,5 +1,5 @@
 #version 450 core
-layout( local_size_x_id = 0 ) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1 ) in;
 // add double precision math support for pow
 #extension GL_ARB_gpu_shader_fp64 : enable
 
@@ -20,6 +20,16 @@ layout(set = 0, binding = 6) buffer AA { double _aa[]; };
 layout(set = 0, binding = 7) buffer BB { double _bb[]; };
 layout(set = 0, binding = 8) buffer PP { double _pp[]; };
 
+double exp2(double x) {
+    // custom exp2 function to avoid precision issues
+    // exp2(x) = 2^x
+    return pow(2.0, float(x));
+}
+
+double exp(double x) {
+    return exp2(1.442695040 * x);
+}
+
 void main() {
     uint i = gl_GlobalInvocationID.x; 
     for(uint token = 0; token < tokens; token++ ){
@@ -33,48 +43,49 @@ void main() {
                     stateoffset = i + offset * emb + token * emb * layers;
                 }
 
-                // double aa = _aa[stateoffset];
-                // double bb = _bb[stateoffset];
-                // double pp = _pp[stateoffset];
+                double aa = _aa[stateoffset];
+                double bb = _bb[stateoffset];
+                double pp = _pp[stateoffset];
 
-                // const double vv = v[i + token * emb];
-                // const double wr1 = aa + exp(float(u[i + emb * offset] + w[i + emb * offset] + k[i + token * emb])) * vv;
-                // const double wr2 = bb + exp(float(u[i + emb * offset] + w[i + emb * offset] + k[i + token * emb]));
-                // y[i + token * emb] = (wr1) / (wr2+0.001);
+                const double vv = v[i + token * emb];
+                const double wr1 = aa + exp((u[i + emb * offset] + w[i + emb * offset] + k[i + token * emb])) * vv;
+                const double wr2 = bb + exp((u[i + emb * offset] + w[i + emb * offset] + k[i + token * emb]));
+                y[i + token * emb] = (wr1) / (wr2+0.001);
+                y[i + token * emb] = (1.0 / (1.0 + exp((-r[i + token * emb])))) * y[i + token * emb];
+                
+                aa = (aa + exp((double(k[i + token * emb]) + w[i + emb * offset])) * vv) * exp((w[i + emb * offset]));
+                bb = (bb + exp((double(k[i + token * emb]) + w[i + emb * offset]))) * exp((w[i + emb * offset]));
+                _aa[stateoffset] = aa;
+                _bb[stateoffset] = bb;
+                _pp[stateoffset] = pp;
+
+                // double ww = u[i + emb * offset] + k[i + token * emb];
+                // double p = max(_pp[stateoffset], ww);
+
+                // double e1 = double(exp(float(_pp[stateoffset]-p)));
+
+                // double e2 = double(exp(float(ww - p)));
+
+                // double a = e1 * _aa[stateoffset] + e2 * v[i + token * emb];
+
+                // double b = e1 * _bb[stateoffset] + e2;
+
+                // double wwn = _pp[stateoffset]+w[i + emb * offset];
+
+                // double p1 = max(wwn, k[i + token * emb]);
+
+                // double e11 = double(exp(float(wwn - p1)));
+
+                // double e21 = double(exp(float(k[i + token * emb] - p1)));
+
+                // _aa[stateoffset] = e11 * _aa[stateoffset] + e21 * v[i + token * emb];
+
+                // _bb[stateoffset] = e11 * _bb[stateoffset] + e21;
+
+                // _pp[stateoffset] = p1 ;
+
+                // y[i + token * emb] = a / (b+0.0001);
                 // y[i + token * emb] = (1.0 / (1.0 + exp(float(-r[i + token * emb])))) * y[i + token * emb];
-                // aa = (aa + exp(float(double(k[i + token * emb]))) * vv) * exp(float(w[i + emb * offset]));
-                // bb = (bb + exp(float(double(k[i + token * emb])))) * exp(float(w[i + emb * offset]));
-                // _aa[stateoffset] = aa;
-                // _bb[stateoffset] = bb;
-                // _pp[stateoffset] = pp;
-
-                double ww = u[i + emb * offset] + k[i + token * emb];
-                double p = max(_pp[stateoffset], ww);
-
-                double e1 = double(exp(float(_pp[stateoffset]-p)));
-
-                double e2 = double(exp(float(ww - p)));
-
-                double a = e1 * _aa[stateoffset] + e2 * v[i + token * emb];
-
-                double b = e1 * _bb[stateoffset] + e2;
-
-                double wwn = _pp[stateoffset]+w[i + emb * offset];
-
-                double p1 = max(wwn, k[i + token * emb]);
-
-                double e11 = double(exp(float(wwn - p1)));
-
-                double e21 = double(exp(float(k[i + token * emb] - p1)));
-
-                _aa[stateoffset] = e11 * _aa[stateoffset] + e21 * v[i + token * emb];
-
-                _bb[stateoffset] = e11 * _bb[stateoffset] + e21;
-
-                _pp[stateoffset] = p1 ;
-
-                y[i + token * emb] = a / (b+0.0001);
-                y[i + token * emb] = (1.0 / (1.0 + exp(float(-r[i + token * emb])))) * y[i + token * emb];
             }
         }
     

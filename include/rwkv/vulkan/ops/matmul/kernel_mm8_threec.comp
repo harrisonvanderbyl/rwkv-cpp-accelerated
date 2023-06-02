@@ -9,9 +9,10 @@
 layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
 
 layout( constant_id = 0 ) const uint jsplit = 1;
-layout( constant_id = 1 ) const uint N = 1;
-layout( constant_id = 2 ) const uint tokens = 1;
-layout( constant_id = 3 ) const uint offset = 1;
+layout( constant_id = 1 ) const uint jtile = 1;
+layout( constant_id = 2 ) const uint N = 1;
+layout( constant_id = 3 ) const uint tokens = 1;
+layout( constant_id = 4 ) const uint offset = 1;
 
 layout(set = 0, binding = 0) readonly buffer xy_buffer {
     float xy[];
@@ -66,7 +67,7 @@ layout(set = 0, binding = 12) buffer y2_buffer {
 };
 
 void main() {
-    uint k = gl_GlobalInvocationID.x;
+    uint k = gl_GlobalInvocationID.x * jtile + gl_GlobalInvocationID.z;
     uint j0 = gl_GlobalInvocationID.y * jsplit;
     uint j1 = j0 + jsplit;
 

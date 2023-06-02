@@ -2,7 +2,7 @@
 #extension GL_EXT_shader_atomic_float : require
 //
 // workgroup size defined with specialization constants.
-layout( local_size_x_id = 0 ) in;
+layout(local_size_x = 1, local_size_y = 1, local_size_z = 1 ) in;
 /*layout( local_size_y_id = 1 ) in;
 layout( local_size_z_id = 2 ) in;*/
 

@@ -64,6 +64,7 @@ namespace vuda
     template <typename... Ts>
     inline void launchKernel(std::string const& identifier, char const* entry, stream_t stream, dim3 gridDim, Ts... args)
     {
+        //std::cout << identifier << ":" << gridDim.x << std::endl;
         //
         // get thread id
         const std::thread::id tid = std::this_thread::get_id();
