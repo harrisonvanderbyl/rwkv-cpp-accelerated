@@ -198,7 +198,7 @@ def convert_model(path: str):
         name="wkv_cuda_export",
         sources=[os.path.join(current_path, "cpp_save_tensor.cpp")],
         # add ../include to include path
-        extra_include_paths=[os.path.join(current_path, "../include/rwkv/rwkv")],
+        extra_include_paths=[os.path.join(current_path, "../include/")],
         )
 
     w = torch.load(path, map_location="cpu")
