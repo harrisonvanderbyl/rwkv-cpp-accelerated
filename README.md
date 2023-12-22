@@ -35,7 +35,19 @@ included is a simple example of how to use in both c++ and python.
 
 ## Build Instructions
 
+### Build librwkv_cuda.a 
+
+In the top of the source directory
+```
+mkdir build
+cd build
+cmake ..
+cmake --build . --config Release
+```
+
 ### Build example storygen on Linux/windows
+Make sure you already installed CUDA Toolkit / HIP development tools / Vulkan development tools
+
 ```
 # in example/storygen
 build.sh # Linux/nvidia
@@ -44,9 +56,12 @@ amd.sh # Linux/Amd
 vulkan.sh # Linux/Vulkan(all)
 ```
 
-You can find executable at build/release/rwkv[.exe]
+You can find executable at build/storygen[.exe] that can be run from the build directory. It expects a 'model.bin' file at the converter folder. See the following note on downloading and converting the RWKV 4 models. 
 
-Make sure you already installed CUDA Toolkit / HIP development tools / Vulkan development tools
+```
+$ cd build 
+$ ./storygen
+```
 
 ## Convert the model into the format
 
@@ -70,7 +85,6 @@ Make sure you have python + torch, tqdm and Ninja packages installed.
 > cd converter
 > python3 convert_model.py your_downloaded_model.pth
 ```
-
 
 * On Windows, please run the above commands in "x64 Native Tools Command Prompt for VS 2022" terminal.
 

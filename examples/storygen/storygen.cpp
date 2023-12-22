@@ -5,24 +5,23 @@ int main(){
     std::string initPrompt = "### Instruction: Write a story/book using the themes and details provided\n\
 \n\
 ### Input:";
-    
-    
 
     RWKV Rwkv = RWKV();
-    Rwkv.loadTokenizer("./vocab");
+    Rwkv.loadTokenizer("../../../include/rwkv/tokenizer/vocab");
 
     // tokenizer;
     // get current directory
     std::string current = std::filesystem::current_path().string();
+    std::string model_bin_path = current + "/../../../converter/model.bin";
 
-    std::cout << current + "/model.bin" << std::endl;
+    std::cout << model_bin_path << std::endl;
     // if no file exists, suggest converting one
-    if (!std::filesystem::exists(current + "/model.bin")) {
+    if (!std::filesystem::exists(model_bin_path)) {
         std::cerr << "No model file found. Please convert a PyTorch model first.\n Use https://github.com/harrisonvanderbyl/rwkv-cpp-cuda exporter to create a model.bin file and move it next to here" << std::endl;
         return 1;
     }
 
-    Rwkv.loadFile(current + "/model.bin",1);
+    Rwkv.loadFile(model_bin_path,1);
     
     std::cout << "Loaded model" << std::endl;
     std::cout << "loading context" << std::endl << std::endl;
@@ -52,7 +51,7 @@ int main(){
 
             }
             exit = false;
-         
+
 
             Rwkv.state->setSubState(currentState);
             lasttoken = originalLastToken;
