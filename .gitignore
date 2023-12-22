@@ -5,3 +5,5 @@ __pycache__
 chat
 **/release/**
 *.so
+converter/*.pth
+converter/*.bin
