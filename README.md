@@ -3,6 +3,9 @@ This is a super simple c++/cuda implementation of rwkv with no pytorch/libtorch 
 
 included is a simple example of how to use in both c++ and python.
 
+# This is dead, try RWKV.CUH or RWKV.HPP or RWKV.CPP
+# This is also V4 only
+
 ### Features
 
 * Direct Disk -> Gpu loading ( practically no ram needed )
